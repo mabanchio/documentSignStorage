@@ -1,0 +1,42 @@
+# Foundry
+/out
+/cache
+/broadcast
+
+# Rust
+target/
+Cargo.lock
+*.pdb
+
+# Node
+dapp/node_modules/
+dapp/.next/
+dapp/out/
+dapp/build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+.coverage
+coverage/
