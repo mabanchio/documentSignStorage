@@ -1,0 +1,42 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Solidity tests
+        run: forge test
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+
+      - name: Install dApp dependencies
+        run: cd dapp && npm install
+
+      - name: Lint dApp
+        run: cd dapp && npm run lint
+
+      - name: Format check
+        run: |
+          forge fmt --check
+          cd dapp && npm run format:check
+
+      - name: Test coverage
+        run: forge coverage
