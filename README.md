@@ -33,6 +33,8 @@ cmake --version     # 3.20+
 
 ```
 documentSignStorage/
+├── .github/                   # GitHub Actions CI/CD
+├── .vscode/                   # Configuración de VSCode
 ├── contracts/                 # Smart contracts en Solidity
 │   ├── DocumentRegistry.sol   # Contrato principal
 │   └── interfaces/
@@ -46,9 +48,39 @@ documentSignStorage/
 │   ├── hooks/                 # Hooks personalizados
 │   ├── utils/                 # Utilidades
 │   └── types/                 # Tipos TypeScript
+├── lib/                       # Dependencias de Foundry
+├── .editorconfig              # Configuración de editores
+├── .gitignore                 # Archivos ignorados por Git
+├── .prettierrc.json           # Configuración de Prettier
+├── CONTRIBUTING.md            # Guía de contribución
 ├── foundry.toml               # Configuración de Foundry
-└── package.json               # Dependencias del proyecto
+├── LICENSE                    # Licencia MIT
+├── package.json               # Dependencias del proyecto
+├── README.md                  # Este archivo
+└── STATUS.md                  # Estado actual del proyecto
 ```
+
+## Configuración del Proyecto
+
+### Archivos de Configuración Principales
+
+- **`.editorconfig`** - Normaliza formato entre IDEs
+- **`.prettierrc.json`** - Formateo automático de código
+- **`.github/workflows/tests.yml`** - CI/CD automático
+- **`.vscode/settings.json`** - Configuración recomendada de VSCode
+- **`foundry.toml`** - Configuración de Foundry (compilador Solidity)
+- **`tsconfig.json`** - Configuración de TypeScript
+
+### Extensiones VSCode Recomendadas
+
+- Prettier - Code formatter
+- ESLint - Linter
+- Hardhat Solidity - Soporte para Solidity
+- GitHub Copilot - Autocompletado con IA
+
+Las extensiones se instalan automáticamente si aceptas la sugerencia al abrir el proyecto.
+
+## Estructura del Proyecto
 
 ## Instalación Rápida
 
