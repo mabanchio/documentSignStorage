@@ -8,7 +8,8 @@
     "build": "cd dapp && npm run build",
     "start": "cd dapp && npm start",
     "test": "cd dapp && npm test",
-    "anvil": "anvil --accounts 10 --balance 10000 --port 8545"
+    "anvil": "anvil --accounts 10 --balance 10000 --port 8545",
+    "deploy": "forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   },
   "keywords": [
     "ethereum",
@@ -18,5 +19,9 @@
     "dapp"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "ethers": "^6.16.0"
+  }
 }
