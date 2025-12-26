@@ -1,5 +1,27 @@
 # Guía de Despliegue - DocumentRegistry dApp
 
+## ⚡ SOLUCIÓN RÁPIDA: Usa Foundry Cast en lugar de Anvil
+
+Si Anvil sigue compilándose, puedes usar **Foundry Cast** para desplegar a una red de prueba pública:
+
+```bash
+# 1. Instala Foundry (más rápido que Anvil solo)
+curl -L https://foundry.paradigm.xyz | bash
+# o en Windows, descarga desde:
+# https://github.com/foundry-rs/foundry/releases
+
+# 2. Despliega a Sepolia Testnet
+forge script script/Deploy.s.sol \
+  --rpc-url https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161 \
+  --broadcast \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# 3. Actualiza .env.local con la dirección desplegada
+# NEXT_PUBLIC_CHAIN_ID=11155111
+```
+
+---
+
 ## Estado Actual
 
 La instalación de Anvil está en progreso. Se está compilando desde el código fuente de Foundry usando Cargo.
