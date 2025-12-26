@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Contract, JsonRpcProvider } from 'ethers';
-import { useMetaMask } from '@contexts/MetaMaskContext';
+import { useMetaMask } from '@/contexts/MetaMaskContext';
 
 // ABI del contrato DocumentRegistry
 const DOCUMENT_REGISTRY_ABI = [
