@@ -92,16 +92,15 @@ contract DocumentRegistryTest is Test {
     }
 
     /**
-     * @dev Crea una firma simulada para testing
+     * @dev Crea una firma válida para testing usando la clave privada
      */
     function createSignature(bytes32 hash) internal view returns (bytes memory) {
-        // Para testing, retornamos una firma válida de 65 bytes
-        bytes memory sig = new bytes(65);
-
-        // Llenar con datos válidos (esto es solo para testing)
-        // En producción, la firma se generaría con una clave privada real
-        sig[0] = 0x00;
-
+        // Usar vm.sign para crear una firma válida con la clave privada
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, hash);
+        
+        // Convertir v, r, s a formato bytes concatenado (65 bytes)
+        bytes memory sig = abi.encodePacked(r, s, v);
+        
         return sig;
     }
 }

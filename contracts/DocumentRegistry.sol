@@ -55,7 +55,7 @@ contract DocumentRegistry is IDocumentRegistry {
         bytes32 hash,
         address signer,
         bytes calldata signature
-    ) external override returns (bool isValid) {
+    ) external view override returns (bool isValid) {
         require(hash != bytes32(0), "DocumentRegistry: Hash cannot be zero");
         require(signer != address(0), "DocumentRegistry: Signer cannot be zero");
 
@@ -65,8 +65,8 @@ contract DocumentRegistry is IDocumentRegistry {
         // Verificar si el firmante recuperado coincide con el proporcionado
         isValid = recoveredSigner == signer && documents[hash].exists;
 
-        // Emitir evento
-        emit DocumentVerified(hash, signer, isValid);
+        // Emitir evento - NO se puede emitir en una función view
+        // emit DocumentVerified(hash, signer, isValid);
     }
 
     /**
