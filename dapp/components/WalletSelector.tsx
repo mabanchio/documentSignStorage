@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMetaMask } from '@hooks';
+import { useMetaMask } from '@/hooks';
 import { ChevronDown } from 'lucide-react';
 
 export function WalletSelector() {

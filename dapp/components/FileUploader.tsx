@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { useFileHash } from '@hooks';
+import { useFileHash } from '@/hooks';
 import { Upload } from 'lucide-react';
 
 interface FileUploaderProps {

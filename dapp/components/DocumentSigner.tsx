@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMetaMask, useContract } from '@hooks';
+import { useMetaMask, useContract } from '@/hooks';
 import { ethers } from 'ethers';
 import { CheckCircle } from 'lucide-react';
 

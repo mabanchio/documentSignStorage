@@ -6,7 +6,7 @@ import {
   FileUploader,
   DocumentSigner,
   DocumentVerifier,
-} from '@components';
+} from '@/components';
 import { FileText } from 'lucide-react';
 
 export default function Home() {

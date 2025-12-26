@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useFileHash, useContract } from '@hooks';
+import { useFileHash, useContract } from '@/hooks';
 import { EthersUtils } from '@utils/ethers';
 import { CheckCircle, XCircle } from 'lucide-react';
 
