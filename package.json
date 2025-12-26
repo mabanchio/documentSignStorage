@@ -1,0 +1,22 @@
+{
+  "name": "eth-database-document",
+  "version": "1.0.0",
+  "description": "dApp de Verificación de Documentos en Blockchain Ethereum",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd dapp && npm run dev",
+    "build": "cd dapp && npm run build",
+    "start": "cd dapp && npm start",
+    "test": "cd dapp && npm test",
+    "anvil": "anvil --accounts 10 --balance 10000 --port 8545"
+  },
+  "keywords": [
+    "ethereum",
+    "blockchain",
+    "documents",
+    "verification",
+    "dapp"
+  ],
+  "author": "",
+  "license": "MIT"
+}
