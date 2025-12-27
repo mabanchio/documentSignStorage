@@ -7,7 +7,6 @@ import {
   getSignedDocuments,
   searchDocuments,
   deleteSignedDocument,
-  downloadDocumentsAsJSON,
   type SignedDocument,
 } from '@/utils/documentStorage';
 import { CopyButton, formatAddress } from './CopyButton';
@@ -97,26 +96,24 @@ export function DocumentLibrary() {
     setDeleteConfirmName('');
   };
 
-  const handleDownload = () => {
-    if (documents.length === 0) {
-      errorToast('✗ No hay documentos para descargar');
-      return;
-    }
-    downloadDocumentsAsJSON();
-    success('✓ Documentos descargados como JSON');
+  const handleDownload = (doc: SignedDocument) => {
+    const content = JSON.stringify(doc, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = globalThis.document.createElement('a');
+    link.href = url;
+    link.download = `${doc.fileName}-${doc.id}.json`;
+    globalThis.document.body.appendChild(link);
+    link.click();
+    globalThis.document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    success('✓ Documento descargado');
   };
 
   return (
     <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200 space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-sm">Biblioteca de Documentos ({filteredDocuments.length})</h3>
-        <button
-          onClick={handleDownload}
-          className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 transition flex items-center gap-1"
-        >
-          <Download size={14} />
-          Descargar
-        </button>
       </div>
 
       {/* Barra de búsqueda */}
@@ -225,8 +222,21 @@ export function DocumentLibrary() {
                     className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
                   />
                   <button
+                    onClick={() => handleDownload(doc)}
+                    className="px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded transition flex items-center gap-1"
+                    title="Descargar documento"
+                  >
+                    <Download size={14} />
+                  </button>
+                  <button
                     onClick={() => handleDelete(doc.id, doc.fileName)}
-                    className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition"
+                    disabled={account && account.toLowerCase() !== doc.signerAddress.toLowerCase()}
+                    className={`px-2 py-1 text-xs rounded transition ${
+                      account && account.toLowerCase() === doc.signerAddress.toLowerCase()
+                        ? 'bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                    title={account && account.toLowerCase() !== doc.signerAddress.toLowerCase() ? 'Solo el firmante puede eliminar' : 'Eliminar documento'}
                   >
                     <Trash2 size={14} />
                   </button>
