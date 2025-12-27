@@ -97,17 +97,23 @@ export function DocumentLibrary() {
   };
 
   const handleDownload = (doc: SignedDocument) => {
-    const content = JSON.stringify(doc, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = globalThis.document.createElement('a');
-    link.href = url;
-    link.download = `${doc.fileName}-${doc.id}.json`;
-    globalThis.document.body.appendChild(link);
-    link.click();
-    globalThis.document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    success('✓ Documento descargado');
+    try {
+      const content = JSON.stringify(doc, null, 2);
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = globalThis.document.createElement('a');
+      link.href = url;
+      link.download = `${doc.fileName}-${doc.id}.json`;
+      globalThis.document.body.appendChild(link);
+      link.click();
+      globalThis.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      success('✓ Documento descargado');
+    } catch (error) {
+      console.error('Error descargando documento:', error);
+      errorToast('✗ Error al descargar el documento');
+    }
+  };
   };
 
   return (
