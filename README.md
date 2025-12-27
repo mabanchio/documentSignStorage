@@ -4,16 +4,18 @@ Una aplicación descentralizada (dApp) completa para almacenar y verificar docum
 
 ## ✨ Características Principales
 
-- ✅ **Almacenamiento Blockchain**: Guardar firmas inmutables en blockchain (Ganache/Ethereum)
+- ✅ **Almacenamiento Blockchain**: Guardar documentos inmutables en blockchain (Ganache/Ethereum)
 - ✅ **Integración MetaMask Real**: Conecta con extensión MetaMask real del navegador
 - ✅ **Fallback Ganache**: 10 wallets simuladas si MetaMask no está instalada
-- ✅ **Flujo Blockchain-First**: Transacción blockchain PRIMERO, localStorage DESPUÉS
+- ✅ **Flujo Simplificado**: Una sola autorización MetaMask por documento (sin firma local)
+- ✅ **Firma de Lotes**: Guardar múltiples documentos con una sola transacción blockchain
+- ✅ **Hashes Consistentes**: Keccak256 determinístico - mismo archivo siempre genera mismo hash
+- ✅ **Detección de Duplicados**: Reconoce documentos ya firmados al cargarlos nuevamente
 - ✅ **Manejo Robusto de Errores**: Detecta rechazo, fondos insuficientes, errores de red
-- ✅ **Historial con Contador**: Muestra total de documentos + filtrados dinámicamente
-- ✅ **Criptografía ECDSA**: Firmas digitales secp256k1 con recuperación de firmante
+- ✅ **Historial Local**: Almacena documentos en localStorage para acceso rápido
 - ✅ **Interfaz Intuitiva**: Next.js 14 + TypeScript + Tailwind CSS + Lucide Icons
 - ✅ **100% Descentralizado**: Smart contract en blockchain, sin servidor backend
-- ✅ **Verificación Inmediata**: Valida documentos contra blockchain con Keccak256
+- ✅ **Verificación Inmediata**: Valida documentos contra blockchain
 
 ## Requisitos Previos
 
@@ -318,25 +320,43 @@ Reinicia la dApp y ¡listo! Ya puedes firmar documentos en blockchain.
 
 ### 1. Conectar Wallet
 
-Haz clic en "Conectar Wallet" en la esquina superior derecha. Selecciona una de las 10 wallets de Anvil.
+Haz clic en "Conectar Wallet" en la esquina superior derecha. Selecciona una de las 10 wallets de Ganache.
 
-### 2. Firmar un Documento
+### 2. Firmar Documentos
 
+#### Documento Individual
 - Ve a la pestaña "Firmar Documento"
 - Arrastra o selecciona un archivo
 - La app calculará automáticamente el hash keccak256
-- Haz clic en "Firmar Documento"
-- Confirma el mensaje de firma en la alerta
-- Haz clic en "Almacenar en Blockchain"
-- Confirma nuevamente y verás el hash de transacción
+- Haz clic en "Guardar Documento"
+- Confirma en MetaMask (una autorización)
+- El documento se guarda en blockchain + historial local
+
+#### Múltiples Documentos (Lotes)
+- Ve a la pestaña "Firmar Múltiples Documentos"
+- Arrastra o selecciona 2 o más archivos
+- Haz clic en "Firmar y Guardar Todo"
+- Confirma en MetaMask (una por documento)
+- Todos se guardan simultáneamente en blockchain
+
+**Ventajas del flujo actual:**
+- ✅ Una sola autorización MetaMask por documento
+- ✅ Hash determinístico (mismo archivo = mismo hash siempre)
+- ✅ Detección automática de duplicados
+- ✅ Transacción blockchain = autenticidad garantizada
 
 ### 3. Verificar un Documento
 
 - Ve a la pestaña "Verificar Documento"
 - Sube el mismo archivo
-- Ingresa la dirección del wallet que lo firmó
-- Haz clic en "Verificar Documento"
-- Verás si es válido o no
+- Verá automáticamente si está registrado en blockchain
+- Muestra la dirección de quien lo guardó y fecha
+
+### 4. Historial
+
+- Ve a la pestaña "Historial"
+- Visualiza todos los documentos almacenados localmente
+- Cada uno muestra: nombre, hash, dirección guardante, fecha
 
 ## Estructura de Datos del Contrato
 
@@ -344,8 +364,8 @@ Haz clic en "Conectar Wallet" en la esquina superior derecha. Selecciona una de 
 struct Document {
     bytes32 hash;        // Hash keccak256 del archivo
     uint256 timestamp;   // Timestamp del almacenamiento
-    address signer;      // Dirección de quien firmó
-    bytes signature;     // Firma digital ECDSA
+    address signer;      // Dirección de quien lo guardó (msg.sender)
+    bytes signature;     // Firma digital (ahora opcional)
     bool exists;         // Flag de existencia
 }
 ```
