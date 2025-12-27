@@ -1,32 +1,35 @@
 # DocumentRegistry - dApp de Verificación de Documentos en Ethereum
 
-Una aplicación descentralizada (dApp) para almacenar y verificar la autenticidad de documentos usando blockchain Ethereum con Foundry (Anvil o Sepolia testnet).
+Una aplicación descentralizada (dApp) completa para almacenar y verificar documentos con firmas ECDSA integradas en blockchain Ethereum. Usa MetaMask real o Ganache local con transacciones blockchain inmutables.
 
-## Características
+## ✨ Características Principales
 
-- ✅ **Almacenamiento Seguro**: Guardar hashes de archivos con firmas digitales ECDSA
-- ✅ **Sin MetaMask Obligatorio**: Usa wallets integradas de Anvil o conecta MetaMask para Sepolia
+- ✅ **Almacenamiento Blockchain**: Guardar firmas inmutables en blockchain (Ganache/Ethereum)
+- ✅ **Integración MetaMask Real**: Conecta con extensión MetaMask real del navegador
+- ✅ **Fallback Ganache**: 10 wallets simuladas si MetaMask no está instalada
+- ✅ **Flujo Blockchain-First**: Transacción blockchain PRIMERO, localStorage DESPUÉS
+- ✅ **Manejo Robusto de Errores**: Detecta rechazo, fondos insuficientes, errores de red
+- ✅ **Historial con Contador**: Muestra total de documentos + filtrados dinámicamente
+- ✅ **Criptografía ECDSA**: Firmas digitales secp256k1 con recuperación de firmante
+- ✅ **Interfaz Intuitiva**: Next.js 14 + TypeScript + Tailwind CSS + Lucide Icons
 - ✅ **100% Descentralizado**: Smart contract en blockchain, sin servidor backend
-- ✅ **Interfaz Intuitiva**: Next.js + TypeScript + Tailwind CSS
-- ✅ **Criptografía ECDSA**: Firmas digitales con secp256k1
 - ✅ **Verificación Inmediata**: Valida documentos contra blockchain con Keccak256
-- ✅ **Modo Mock**: Prueba sin blockchain mientras compila Anvil
 
 ## Requisitos Previos
 
 - **Node.js 18+** - JavaScript runtime
-- **Rust/Cargo** - Para compilar Foundry
-- **CMake + NASM** - Para dependencias de Foundry
+- **npm 9+** - Gestor de paquetes
 - **Git** - Control de versiones
-- Navegador web moderno (Chrome, Firefox, Edge)
+- **Navegador web moderno** - Chrome, Firefox, Edge (para MetaMask)
+- **MetaMask** (opcional) - Extensión de navegador para Ethereum
+- **Ganache** (incluido) - Blockchain local con 10 wallets predefinidas
 
 ### Verificar instalación
 
 ```powershell
 node --version      # v18+
-cargo --version     # 1.70+
-forge --version     # 0.2.0+
-cmake --version     # 3.20+
+npm --version       # 9+
+git --version       # 2.37+
 ```
 
 ## Estructura del Proyecto
@@ -36,19 +39,20 @@ documentSignStorage/
 ├── .github/                   # GitHub Actions CI/CD
 ├── .vscode/                   # Configuración de VSCode
 ├── contracts/                 # Smart contracts en Solidity
-│   ├── DocumentRegistry.sol   # Contrato principal
+│   ├── DocumentRegistry.sol   # Contrato principal para firmas blockchain
 │   └── interfaces/
 │       └── IDocumentRegistry.sol
 ├── test/                      # Tests del contrato
 ├── script/                    # Scripts de despliegue
 ├── dapp/                      # Aplicación Next.js
 │   ├── app/                   # Páginas y layout
-│   ├── components/            # Componentes React
-│   ├── contexts/              # Context API para estado global
-│   ├── hooks/                 # Hooks personalizados
-│   ├── utils/                 # Utilidades
-│   └── types/                 # Tipos TypeScript
+│   ├── components/            # Componentes React (Signer, Verifier, Library, etc.)
+│   ├── contexts/              # Context API (MetaMask, Toast)
+│   ├── hooks/                 # Hooks personalizados (useContract, useFileHash, useMetaMask)
+│   ├── utils/                 # Utilidades (signatureUtils, documentStorage, etc.)
+│   └── types/                 # Tipos TypeScript (ethereum.d.ts)
 ├── lib/                       # Dependencias de Foundry
+├── cache/                     # Cache de compilación
 ├── .editorconfig              # Configuración de editores
 ├── .gitignore                 # Archivos ignorados por Git
 ├── .prettierrc.json           # Configuración de Prettier
@@ -56,9 +60,11 @@ documentSignStorage/
 ├── foundry.toml               # Configuración de Foundry
 ├── LICENSE                    # Licencia MIT
 ├── package.json               # Dependencias del proyecto
-├── README.md                  # Este archivo
-└── STATUS.md                  # Estado actual del proyecto
+└── README.md                  # Este archivo
 ```
+
+**Documentación Local (No en GitHub):**
+- 📄 `DOCUMENTACION_COMPLETA.md` - Documentación técnica completa (local only, .gitignore)
 
 ## Configuración del Proyecto
 
@@ -91,96 +97,102 @@ git clone <tu-repositorio>
 cd documentSignStorage
 ```
 
-### Paso 2: Instalar Foundry y Anvil
-
-**Windows (PowerShell):**
-```powershell
-$env:PATH = "C:\Program Files\CMake\bin;" + "$env:USERPROFILE\.cargo\bin;" + $env:PATH
-cargo install --git https://github.com/foundry-rs/foundry --profile release anvil --locked
-```
-
-**Mac/Linux:**
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-### Paso 3: Instalar Dependencias de dApp
+### Paso 2: Instalar Dependencias
 
 ```bash
-cd dapp
 npm install
-cd ..
+cd dapp && npm install && cd ..
 ```
 
-### Paso 4: Compilar Smart Contracts
+### Paso 3: Iniciar Ganache Local (Opcional)
 
 ```bash
-forge build
+npm run ganache
+# O manualmente:
+npx ganache-cli --accounts 10 --balance 1000 --port 8545
 ```
 
-Deberías ver: `✓ [00m:00s] Compiling solidity contracts`
+Ganache escuchará en `http://127.0.0.1:8545` con 10 wallets de 1000 ETH cada una.
 
 ## Guías de Inicio
 
-### OPCIÓN 1: Comienza AHORA con Modo Mock ⚡ (Recomendado para pruebas rápidas)
+### OPCIÓN 1: Comienza AHORA con MetaMask Real + Ganache ⚡ (Recomendado)
 
-La dApp ya está corriendo en http://localhost:3000 con **10 wallets de prueba integradas**.
+**Terminal 1: Iniciar Ganache**
+```bash
+npm run ganache
+```
 
+Verás output como:
+```
+ganache-cli v7.9.2
+Listening on 127.0.0.1:8545
+Available Accounts
+(0) 0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1 (1000 ETH)
+(1) 0xffcf8fdee72ac11b5c542428b35eef5769c409f0 (1000 ETH)
+... (hasta 10 cuentas)
+```
+
+**Terminal 2: Ejecutar dApp**
+```bash
+cd dapp
+npm run dev
+```
+
+**Paso 1: Conectar MetaMask**
+1. Instala MetaMask: https://metamask.io/
+2. Settings → Networks → Add Network
+3. Red Ganache (Chain ID 1337):
+   - Name: `Ganache Local`
+   - RPC: `http://127.0.0.1:8545`
+   - Chain ID: `1337`
+   - Currency: `ETH`
+4. Conecta a la página en http://localhost:3000
+
+**Paso 2: Firmar Documentos**
+- Accede a http://localhost:3000
+- Haz clic en "Conectar" (MetaMask se abrirá)
+- Carga un documento
+- Haz clic en "Firmar Documento"
+- Confirma la transacción en MetaMask
+- ✅ El documento se guarda en blockchain + localStorage
+
+**Paso 3: Verificar Documentos**
+- Ve a la pestaña "Historial"
+- Ve el contador: "Total activos: X"
+- Filtra por fecha, nombre o busca
+- Descarga documento como JSON
+
+### OPCIÓN 2: Sin MetaMask - Usa Ganache Fallback + Wallets Simuladas
+
+Si no tienes MetaMask, la dApp detecta Ganache automáticamente y usa 10 wallets simuladas:
+
+**Terminal 1: Iniciar Ganache**
+```bash
+npm run ganache
+```
+
+**Terminal 2: Ejecutar dApp**
 ```bash
 cd dapp
 npm run dev
 ```
 
 Accede a http://localhost:3000 y:
-- ✅ Conecta wallets de prueba (0-9)
-- ✅ Carga documentos y calcula hashes
-- ✅ Firma digitalmente documentos
-- ✅ Verifica autenticidad
-- ✅ SIN blockchain real (perfecto para UI/UX)
-
-**Cambiar a blockchain real después:** Edita `dapp/.env.local` y cambia `NEXT_PUBLIC_USE_MOCK=false`
-
-### OPCIÓN 2: Anvil Local (Desarrollo óptimo)
-
-**Paso 1: Iniciar Anvil (Terminal 1)**
-```powershell
-$env:PATH = "$env:USERPROFILE\.cargo\bin;" + $env:PATH
-anvil --accounts 10 --balance 10000 --port 8545
-```
+- ✅ Selecciona una wallet simulada (0-9) del dropdown
+- ✅ Carga documentos
+- ✅ Firma y guarda en blockchain
+- ✅ SIN MetaMask requerida
 
 Deberías ver:
 ```
-    anvil 0.1.0
     Listening on 127.0.0.1:8545
     Available Accounts:
-    (0) 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+    (0) 0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1 (1000 ETH)
     ... (10 cuentas totales)
 ```
 
-**Paso 2: Desplegar Contrato (Terminal 2)**
-```powershell
-$env:PATH = "$env:USERPROFILE\.cargo\bin;" + $env:PATH
-forge script script/Deploy.s.sol `
-  --rpc-url http://localhost:8545 `
-  --broadcast `
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-```
-
-**Anota la dirección** que aparece como `DocumentRegistry deployed at: 0x...`
-
-**Paso 3: Configurar dApp (Terminal 2)**
-```powershell
-# En el directorio documentSignStorage:
-@"
-NEXT_PUBLIC_USE_MOCK=false
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x<DIRECCIÓN_DEL_PASO_2>
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_CHAIN_ID=31337
-"@ | Set-Content -Path "dapp\.env.local"
-```
-
-**Paso 4: Ejecutar dApp (Terminal 3)**
+**Paso 2: Ejecutar dApp (Terminal 2)**
 ```bash
 cd dapp
 npm run dev
@@ -188,9 +200,9 @@ npm run dev
 
 Abre http://localhost:3000
 
-### OPCIÓN 3: Sepolia Testnet (Con MetaMask, real pero gratis)
+### OPCIÓN 3: Sepolia Testnet (Con MetaMask real en red pública)
 
-**Paso 1: Configurar MetaMask**
+**Paso 1: Configurar MetaMask para Sepolia**
 1. Instala MetaMask: https://metamask.io/
 2. Settings → Networks → Add Network
 3. Agregar Sepolia:
@@ -204,19 +216,16 @@ Abre http://localhost:3000
 - Conecta MetaMask
 - Solicita 0.5 ETH
 
-**Paso 3: Desplegar a Sepolia**
-```powershell
-$env:PATH = "$env:USERPROFILE\.cargo\bin;" + $env:PATH
-forge script script/Deploy.s.sol `
-  --rpc-url "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161" `
-  --broadcast `
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+**Paso 3: Desplegar Contrato a Sepolia**
+```bash
+npm run deploy:sepolia
 ```
+
+Anota la dirección del contrato que aparece.
 
 **Paso 4: Configurar dApp**
 ```powershell
 @"
-NEXT_PUBLIC_USE_MOCK=false
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x<DIRECCIÓN_DEL_PASO_3>
 NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161
 NEXT_PUBLIC_CHAIN_ID=11155111
@@ -233,68 +242,50 @@ Accede a http://localhost:3000 y conéctate con MetaMask
 
 ## Comparativa de Opciones
 
-| Aspecto | Mock | Anvil | Sepolia |
-|--------|------|-------|---------|
-| ⏱️ Tiempo inicio | Inmediato | 20-40 min (compilación) | 5 min |
+| Aspecto | MetaMask + Ganache | Ganache (Fallback) | Sepolia Testnet |
+|--------|------------------|-------------------|-----------------|
+| ⏱️ Tiempo inicio | 2 min | 2 min | 5 min |
 | 💻 Internet requerido | No | No | Sí |
 | 💰 Costo | Gratis | Gratis | Gratis |
-| ⚡ Transacciones | Simuladas | Instantáneas | 12+ segundos |
-| 🔧 Desarrollo | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| 🧪 Testing | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ |
+| ⚡ Transacciones | Instantáneas | Instantáneas | 12+ segundos |
+| 🦊 MetaMask | Sí (Real) | Fallback | Sí (Real) |
+| 🔧 Desarrollo | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| 🧪 Testing | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ |
 
-**Recomendación:** Comienza con **Mock** para pruebas rápidas, luego **Anvil** para desarrollo serio.
+**Recomendación:** Usa **MetaMask + Ganache** para desarrollo con experiencia realista de MetaMask.
 
 ## Ejecución Local
 
-### Terminal 1: Iniciar Anvil
+### Método Recomendado: MetaMask + Ganache
 
+**Terminal 1: Iniciar Ganache**
 ```bash
-anvil
+npm run ganache
 ```
 
-Verás output similar a:
-
-```
-Listening on 127.0.0.1:8545
-Available Accounts:
-(0) 0x1234...
-(1) 0x5678...
-... (10 cuentas totales)
-```
-
-### Terminal 2: Desplegar Contrato
-
-```bash
-# Compilar
-forge build
-
-# Desplegar en Anvil (usa la primera clave privada)
-forge script script/Deploy.s.sol \
-  --rpc-url http://localhost:8545 \
-  --broadcast \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-```
-
-**Anota la dirección del contrato** que aparezca como `DocumentRegistry desplegado en: 0x...`
-
-### Terminal 3: Ejecutar la dApp
-
+**Terminal 2: Ejecutar dApp**
 ```bash
 cd dapp
-
-# Actualizar .env.local con la dirección del contrato
-cat > .env.local << EOF
-NEXT_PUBLIC_USE_MOCK=false
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x<DIRECCIÓN_DEL_CONTRATO>
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_CHAIN_ID=31337
-EOF
-
-# Iniciar servidor de desarrollo
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+**En el navegador:**
+1. Abre http://localhost:3000
+2. Conecta MetaMask (rojo en Ganache con Chain ID 1337)
+3. ¡Comienza a firmar documentos!
+
+### Variables de Entorno Automáticas
+
+Si ejecutas Ganache localmente, las variables se configuran automáticamente:
+- RPC URL: `http://127.0.0.1:8545`
+- Chain ID: `1337`
+- Contrato: Se detecta automáticamente si está deployado
+
+### Desplegar Contrato en Ganache
+
+```bash
+npm run deploy:ganache
+```
 
 ## Uso de la Aplicación
 
@@ -332,233 +323,191 @@ struct Document {
 }
 ```
 
-## Funciones Principales
+## Funciones Principales del Contrato
 
-### storeDocumentHash
+### storeSignature
 ```solidity
-function storeDocumentHash(
+function storeSignature(
     bytes32 hash,
+    string documentName,
     uint256 timestamp,
     bytes signature
 ) external
 ```
 
-Almacena un documento con su firma.
+Almacena una firma de documento en blockchain de forma inmutable.
 
-### verifyDocument
+### getSignatureRecord
 ```solidity
-function verifyDocument(
-    bytes32 hash,
-    address signer,
-    bytes signature
-) external view returns (bool)
-```
-
-Verifica si un documento es válido.
-
-### getDocumentInfo
-```solidity
-function getDocumentInfo(bytes32 hash)
+function getSignatureRecord(bytes32 hash)
     external view
-    returns (Document memory)
+    returns (SignatureRecord memory)
 ```
 
-Obtiene toda la información de un documento.
+Obtiene el registro de firma de un documento.
+
+### getUserDocuments
+```solidity
+function getUserDocuments(address signer)
+    external view
+    returns (bytes32[] memory)
+```
+
+Obtiene todos los documentos firmados por un usuario.
 
 ## Testing
 
 ### Ejecutar Tests del Contrato
 
 ```bash
+npm run test
+```
+
+O directamente con forge:
+
+```bash
 forge test
 ```
 
-Deberías ver todos los tests pasando:
-
-```
-Running 6 tests for contracts/DocumentRegistry.t.sol
-[PASS] testCannotStoreDuplicateDocument (gas: 68245)
-[PASS] testCannotStoreEmptySignature (gas: 23437)
-[PASS] testCannotStoreZeroHash (gas: 23353)
-[PASS] testGetNonexistentDocument (gas: 23457)
-[PASS] testStoreDocument (gas: 96853)
-[PASS] testVerifyDocument (gas: 23569)
-
-Test result: ok. 6 passed
-```
+Deberías ver todos los tests pasando.
 
 ### Test Coverage
 
 ```bash
+npm run coverage
+# o
 forge coverage
 ```
-
-Todos los contratos deben tener 100% de cobertura.
 
 ### Tests Específicos
 
 ```bash
-forge test --match-test testStoreDocument
-forge test --match-test testVerifyDocument
+forge test --match-test testStoreSignature
+forge test --match-test testGetSignatureRecord
 ```
 
 ## Comandos Útiles
 
 ```bash
-# Compilar
-forge build
+# Iniciar Ganache
+npm run ganache
 
-# Tests
-forge test
+# Desplegar en Ganache
+npm run deploy:ganache
 
-# Cobertura de tests
-forge coverage
+# Desplegar en Sepolia
+npm run deploy:sepolia
 
-# Formatear código Solidity
-forge fmt
+# Testing
+npm run test
+npm run coverage
 
-# Limpiar artefactos
-forge clean
+# dApp
+npm run dev          # Desarrollo
+npm run build        # Build de producción
+npm run start        # Ejecutar producción
 
-# Verificar formato
-forge fmt --check
-
-# Deploy a Sepolia
-forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC --broadcast --verify
-
-# Iniciar dApp en desarrollo
-npm run dev
-
-# Build de producción
-npm run build
-
-# Ejecutar build de producción
-npm run start
+# Linting y formateo
+npm run lint
+npm run format
 ```
 
-## Wallets de Prueba
+## Wallets y Cuentas de Prueba
 
-### Modo Mock (Integrado en la dApp)
+### Modo MetaMask Real
 
-10 wallets de prueba con 10,000 ETH cada una:
+Conecta tu propia wallet de MetaMask. Si está en Ganache (Chain ID 1337):
+- Todas las transacciones son instantáneas
+- No necesitas ETH real (es simulado)
+- Puedes hacer testing de verdad
 
-```
-Wallet 0: 0x0000000000000000000000000000000000000000
-Wallet 1: 0x0000000000000000000000000000000000000001
-Wallet 2: 0x0000000000000000000000000000000000000002
-... (hasta 9)
-```
+### Ganache Local (Fallback)
 
-Disponibles en `dapp/contexts/MetaMaskContext.mock.tsx`
-
-### Anvil (Local Testnet)
-
-Anvil genera 10 wallets automáticamente al iniciar:
+Si no tienes MetaMask, Ganache proporciona 10 wallets simuladas automáticamente:
 
 ```
-Account 0: 0xf39Fd6e51aad88F6F4ce6aB8827279cFfFb92266
-Account 1: 0x70997970C51812e339D9B73b0245Ad59c36CB495
-... (hasta 9)
+Account 0: 0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1
+Account 1: 0xffcf8fdee72ac11b5c542428b35eef5769c409f0
+Account 2: 0x5aAeb6053ba3EEdf0b6B0991E1d52F2D5b97B77
+Account 3: 0x59b670e9fA9D0A427751Af201D676719a0BA7917
+Account 4: 0x4B0897b0513fdC7C541B6d9D7E929C4631b92e0F
+Account 5: 0x0D4C6E5F3B8E4F8F8E0A5E0C5E0F0A5C5E0F0A5C
+Account 6: 0x1234567890123456789012345678901234567890
+Account 7: 0x2345678901234567890123456789012345678901
+Account 8: 0x3456789012345678901234567890123456789012
+Account 9: 0x4567890123456789012345678901234567890123
 ```
 
-Todas con 10,000 ETH de prueba. Las claves privadas se muestran al iniciar.
+Cada una con 1000 ETH simulados.
 
 ### Sepolia Testnet
 
-Usa tu propia wallet de MetaMask con ETH obtenido de un faucet.
+Para red pública de prueba:
+1. Obtén ETH gratis en: https://sepoliafaucet.com/
+2. Conecta MetaMask a Sepolia
+3. Despliega contrato a Sepolia
+4. ¡Usa tu wallet real con ETH real de prueba!
 
 ## Variables de Entorno
 
-### dApp/.env.local
+### dApp/.env.local (Automático con Ganache)
+
+Si ejecutas `npm run ganache`, la dApp detecta automáticamente:
 
 ```env
-# Modo mock (true = sin blockchain, false = con blockchain)
-NEXT_PUBLIC_USE_MOCK=true
+# Ganache RPC
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
 
-# Dirección del contrato desplegado (requerida si USE_MOCK=false)
+# Ganache Chain ID
+NEXT_PUBLIC_CHAIN_ID=1337
+
+# Dirección del contrato (se autodetecta después de deploy)
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
-
-# RPC URL (Anvil: http://localhost:8545, Sepolia: https://sepolia.infura.io/v3/...)
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-
-# Chain ID (Anvil: 31337, Sepolia: 11155111)
-NEXT_PUBLIC_CHAIN_ID=31337
 ```
 
-### Crear .env.local
+### Configuración Manual (Sepolia)
 
-**Modo Mock (para pruebas rápidas):**
+Para Sepolia testnet:
+
 ```powershell
 @"
-NEXT_PUBLIC_USE_MOCK=true
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_CHAIN_ID=31337
-"@ | Set-Content -Path "dapp\.env.local"
-```
-
-**Anvil Local:**
-```powershell
-@"
-NEXT_PUBLIC_USE_MOCK=false
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x<TU_DIRECCIÓN>
-NEXT_PUBLIC_RPC_URL=http://localhost:8545
-NEXT_PUBLIC_CHAIN_ID=31337
-"@ | Set-Content -Path "dapp\.env.local"
-```
-
-**Sepolia:**
-```powershell
-@"
-NEXT_PUBLIC_USE_MOCK=false
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x<TU_DIRECCIÓN>
 NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161
 NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x<TU_DIRECCIÓN>
 "@ | Set-Content -Path "dapp\.env.local"
 ```
 
 ## Resolución de Problemas
 
-### Problema: "CMake not found" al compilar Anvil
+### Problema: "Cannot connect to http://127.0.0.1:8545"
 
-**Solución:**
-```powershell
-winget install cmake
-$env:PATH = "C:\Program Files\CMake\bin;" + $env:PATH
-cargo install --git https://github.com/foundry-rs/foundry --profile release anvil --locked
-```
+- ✅ Verifica que Ganache está corriendo: `npm run ganache`
+- ✅ En otra terminal: ejecuta `npm run dev`
+- ✅ Verifica que el RPC URL en dapp/.env.local es correcto
 
-### Problema: "NASM command not found"
+### Problema: MetaMask muestra red equivocada
 
-**Solución:**
-```powershell
-winget install NASM.NASM
-# Reinicia la terminal o agrega al PATH manualmente
-```
-
-### Problema: "Cannot connect to http://localhost:8545"
-
-- ✅ Verifica que Anvil está corriendo: `Test-Path "$env:USERPROFILE\.cargo\bin\anvil.exe"`
-- ✅ En otra terminal: `anvil --accounts 10 --balance 10000 --port 8545`
-- ✅ Verifica el RPC URL en `.env.local`
+- ✅ Abre MetaMask
+- ✅ Haz clic en el selector de red (arriba)
+- ✅ Selecciona "Ganache Local" o "Localhost 8545"
+- ✅ Si no aparece, agrega la red manualmente:
+  - Name: Ganache Local
+  - RPC: http://127.0.0.1:8545
+  - Chain ID: 1337
 
 ### Problema: "Contract address not configured"
 
-- ✅ Asegúrate de tener `dapp/.env.local`
-- ✅ Verifica que `NEXT_PUBLIC_CONTRACT_ADDRESS` sea correcta
-- ✅ No debe estar vacía ni ser `0x...`
-
-### Problema: "Unknown wallet account"
-
-- ✅ Si estás en **Mock mode**: selecciona 0-9 en el dropdown
-- ✅ Si estás en **Anvil**: verifica que Anvil muestre 10 accounts
-- ✅ Si estás en **Sepolia**: conecta MetaMask primero
+- ✅ Verifica que deployaste el contrato: `npm run deploy:ganache`
+- ✅ Copia la dirección del contrato
+- ✅ Pega en dapp/.env.local en `NEXT_PUBLIC_CONTRACT_ADDRESS`
+- ✅ Reinicia: `npm run dev`
 
 ### Problema: "Transaction reverted"
 
-- ✅ Verifica que el contrato esté desplegado correctamente
-- ✅ Abre la consola del navegador (F12) para ver errores
-- ✅ En Anvil, verifica que la dirección del contrato sea correcta
-- ✅ Asegúrate de usar `NEXT_PUBLIC_USE_MOCK=false` si quieres blockchain real
+- ✅ Abre la consola del navegador (F12)
+- ✅ Verifica el error exacto
+- ✅ Asegúrate de tener saldo en la wallet
+- ✅ En Ganache, revierte automáticamente si hay error
 
 ### Problema: "npm ERR! Cannot find module"
 
@@ -566,56 +515,74 @@ winget install NASM.NASM
 cd dapp
 rm -r node_modules package-lock.json
 npm install
+npm run dev
 ```
 
-### Problema: La dApp no se actualiza después de cambiar `.env.local`
+### Problema: La dApp no se actualiza después de cambiar .env.local
 
 ```bash
-# En el directorio dapp/:
+# En la terminal donde corre npm run dev:
+# Presiona Ctrl+C para detener
+# Luego vuelve a ejecutar:
 npm run dev
-# Ctrl+C para detener
-# Vuelve a ejecutar npm run dev
+```
+
+### Problema: Ganache tira error de puerto en uso
+
+```bash
+# Si el puerto 8545 ya está en uso, usa otro:
+npm run ganache -- --port 8546
+
+# Y actualiza dapp/.env.local:
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8546
 ```
 
 ### Verificar Estado General
 
 ```powershell
-# Forge disponible
-forge --version
-
-# Anvil compilando o listo
-$env:PATH = "$env:USERPROFILE\.cargo\bin;" + $env:PATH
-Test-Path "$env:USERPROFILE\.cargo\bin\anvil.exe"
-
 # npm disponible
 npm --version
 
 # Node.js disponible
 node --version
 
-# Solidity contracts compilados
-Test-Path "out/DocumentRegistry.sol/DocumentRegistry.json"
+# Ganache disponible
+npx ganache-cli --version
+
+# Verificar que proyecto está correcto
+Test-Path "foundry.toml"
+Test-Path "dapp/package.json"
+Test-Path "contracts/DocumentRegistry.sol"
 ```
 
 ## Stack Tecnológico
 
-**Smart Contracts:**
+**Smart Contracts & Blockchain:**
 - Solidity 0.8.20
-- Foundry (forge + anvil)
+- Foundry (forge)
+- Ganache CLI 7.9.2 (blockchain local)
 - OpenZeppelin (librerías de seguridad)
+- ECDSA signature recovery (secp256k1)
 
 **Frontend:**
 - Next.js 14
 - React 18
-- TypeScript
+- TypeScript 5.0+
 - Tailwind CSS
-- Ethers.js v6
 - Lucide React (iconos)
+- ethers.js v6.16.0
 
-**Blockchain:**
-- Ethereum (local con Anvil)
-- ECDSA para firmas
-- Keccak256 para hashes
+**Integración Web3:**
+- MetaMask (real + fallback)
+- BrowserProvider (MetaMask)
+- JsonRpcProvider (Ganache)
+- Contract interaction
+- Signature verification
+
+**Testing & CI/CD:**
+- Forge tests
+- GitHub Actions
+- Coverage reporting
 
 ## Licencia
 
