@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ethers } from 'ethers';
 import { useMetaMask } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
 import { useContract } from '@/hooks/useContract';
@@ -34,9 +35,9 @@ export function MultiDocumentSigner() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = e.target?.result as ArrayBuffer;
-        const hashArray = Array.from(new Uint8Array(data));
-        const hashString = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        const keccak256Hash = '0x' + hashString.substring(0, 64);
+        const bytes = new Uint8Array(data);
+        // Usar ethers.keccak256 para que coincida con el hash de FileUploader
+        const keccak256Hash = ethers.keccak256(bytes);
         resolve(keccak256Hash);
       };
       reader.onerror = reject;
