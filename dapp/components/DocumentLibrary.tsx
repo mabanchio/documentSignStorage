@@ -114,7 +114,6 @@ export function DocumentLibrary() {
       errorToast('✗ Error al descargar el documento');
     }
   };
-  };
 
   return (
     <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200 space-y-4">
