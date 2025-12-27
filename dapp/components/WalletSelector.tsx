@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import { useMetaMask } from '@/hooks';
+import { useToast } from '@/contexts/ToastContext';
 import { ChevronDown } from 'lucide-react';
+import { AddressDisplay } from './CopyButton';
 
 export function WalletSelector() {
   const { account, isConnected, selectedWalletIndex, connect, disconnect, switchWallet, availableWallets } =
     useMetaMask();
+  const { success, error } = useToast();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -14,9 +17,9 @@ export function WalletSelector() {
     setIsConnecting(true);
     try {
       await connect();
-      alert('Wallet conectado correctamente!');
-    } catch (error) {
-      alert('Error conectando wallet: ' + (error instanceof Error ? error.message : 'Desconocido'));
+      success('✓ Wallet conectado correctamente');
+    } catch (err) {
+      error('✗ Error conectando wallet: ' + (err instanceof Error ? err.message : 'Desconocido'));
     } finally {
       setIsConnecting(false);
     }
@@ -26,15 +29,15 @@ export function WalletSelector() {
     try {
       await switchWallet(index);
       setIsDropdownOpen(false);
-      alert('Wallet cambiado correctamente!');
-    } catch (error) {
-      alert('Error cambiando wallet: ' + (error instanceof Error ? error.message : 'Desconocido'));
+      success('✓ Wallet cambiado correctamente');
+    } catch (err) {
+      error('✗ Error cambiando wallet: ' + (err instanceof Error ? err.message : 'Desconocido'));
     }
   };
 
   const handleDisconnect = () => {
     disconnect();
-    alert('Wallet desconectado');
+    success('✓ Wallet desconectado');
   };
 
   if (!isConnected) {
@@ -42,7 +45,7 @@ export function WalletSelector() {
       <button
         onClick={handleConnect}
         disabled={isConnecting}
-        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
       >
         {isConnecting ? 'Conectando...' : 'Conectar Wallet'}
       </button>
@@ -54,7 +57,7 @@ export function WalletSelector() {
       <div className="relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-gray-700 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
         >
           <span className="text-sm">
             {account?.substring(0, 6)}...{account?.substring(account.length - 4)}
@@ -85,9 +88,15 @@ export function WalletSelector() {
         )}
       </div>
 
+      {account && (
+        <div className="hidden sm:block">
+          <AddressDisplay address={account} />
+        </div>
+      )}
+
       <button
         onClick={handleDisconnect}
-        className="px-4 py-2 bg-danger text-white rounded-lg hover:bg-red-600 transition"
+        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
       >
         Desconectar
       </button>

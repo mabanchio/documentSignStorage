@@ -6,12 +6,11 @@ import { useToast } from '@/contexts/ToastContext';
 import {
   getSignedDocuments,
   searchDocuments,
-  getDocumentsByAddress,
   deleteSignedDocument,
   downloadDocumentsAsJSON,
   type SignedDocument,
 } from '@/utils/documentStorage';
-import { CopyButton, formatAddress, AddressDisplay } from './CopyButton';
+import { CopyButton, formatAddress } from './CopyButton';
 import { Trash2, Download, Search, Filter, RefreshCw } from 'lucide-react';
 
 export function DocumentLibrary() {

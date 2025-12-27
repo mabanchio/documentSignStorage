@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useFileHash, useContract } from '@/hooks';
+import { useFileHash } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
-import { EthersUtils } from '@/utils/ethers';
-import { recoverSignerAddress, verifySignature } from '@/utils/signatureUtils';
+import { recoverSignerAddress } from '@/utils/signatureUtils';
 import { CheckCircle, XCircle, Download, Trash2, AlertCircle } from 'lucide-react';
 import { CopyButton, AddressDisplay } from './CopyButton';
 import { ExportVerificationModal } from './ExportVerificationModal';
@@ -16,8 +15,7 @@ interface DocumentVerifierProps {
 
 export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { keccak256Hash, calculateHash, fileName } = useFileHash();
-  const contract = useContract();
+  const { keccak256Hash, fileName } = useFileHash();
   const { success, error: errorToast, warning } = useToast();
 
   const [signature, setSignature] = useState('');
@@ -65,13 +63,6 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
     }
   }, [keccak256Hash, success]);
 
-  const handleFileSelect = async (file: File) => {
-    const result = await calculateHash(file);
-    if (result && contract) {
-      // El hash está disponible, listo para verificar
-    }
-  };
-
   const handleClear = () => {
     setSignature('');
     setSignedMessage('');
@@ -106,44 +97,26 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
       }
 
       // En modo blockchain real, verificarías en el contrato
-      if (!contract) {
-        // Modo mock: verificación local
-        success('✓ Firma verificada correctamente');
-        setVerificationResult({
-          isValid: true,
-          message: 'Firma verificada correctamente (modo simulación)',
-          signerAddress: recoveredAddress,
-        });
-        
-        // Crear documento para exportación
-        const docForExport: SignedDocument = {
-          id: `doc_${Date.now()}`,
-          fileName: fileName || 'documento',
-          fileHash: keccak256Hash || '',
-          message: signedMessage,
-          signature: signature,
-          signerAddress: recoveredAddress,
-          timestamp: Date.now(),
-          createdAt: new Date().toLocaleString('es-ES'),
-        };
-        setExportDocument(docForExport);
-        return;
-      }
-
-      // En blockchain real verificarías con el contrato
-      const isValid = verifySignature(signedMessage, signature, recoveredAddress);
-
-      if (isValid) {
-        success('✓ Firma verificada correctamente');
-      } else {
-        errorToast('✗ La firma no es válida');
-      }
-
+      // Modo mock: verificación local
+      success('✓ Firma verificada correctamente');
       setVerificationResult({
-        isValid,
-        message: isValid ? 'Firma verificada correctamente' : 'La firma no es válida',
+        isValid: true,
+        message: 'Firma verificada correctamente (modo simulación)',
         signerAddress: recoveredAddress,
       });
+      
+      // Crear documento para exportación
+      const docForExport: SignedDocument = {
+        id: `doc_${Date.now()}`,
+        fileName: fileName || 'documento',
+        fileHash: keccak256Hash || '',
+        message: signedMessage,
+        signature: signature,
+        signerAddress: recoveredAddress,
+        timestamp: Date.now(),
+        createdAt: new Date().toLocaleString('es-ES'),
+      };
+      setExportDocument(docForExport);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setError(errorMsg);
@@ -164,9 +137,8 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
           <input
             ref={fileInputRef}
             type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileSelect(file);
+            onChange={() => {
+              // El hash se calcula automáticamente en el useEffect
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs"
           />

@@ -241,11 +241,11 @@ export function downloadVerificationData(
 
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = globalThis.document.createElement('a');
   link.href = url;
   link.download = filename;
-  document.body.appendChild(link);
+  globalThis.document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  globalThis.document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }

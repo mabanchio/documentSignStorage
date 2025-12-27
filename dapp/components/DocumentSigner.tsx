@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useMetaMask, useContract } from '@/hooks';
+import { useMetaMask } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
 import { CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import { CopyButton } from './CopyButton';
@@ -17,14 +17,11 @@ interface DocumentSignerProps {
 export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }: DocumentSignerProps) {
   const { isConnected, signMessage } = useMetaMask();
   const { success, error: errorToast, info, warning } = useToast();
-  const contract = useContract();
   const [signature, setSignature] = useState<string | null>(null);
   const [signedMessage, setSignedMessage] = useState<string | null>(null);
-  const [timestamp, setTimestamp] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadySigned, setIsAlreadySigned] = useState(false);
 
@@ -73,7 +70,6 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
 
       setSignature(sig);
       setSignedMessage(message);
-      setTimestamp(ts);
       if (onSigned) {
         onSigned(sig);
       }
@@ -113,10 +109,8 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
   const handleClear = () => {
     setSignature(null);
     setSignedMessage(null);
-    setTimestamp(null);
     setError(null);
     setIsSaved(false);
-    setTxHash(null);
     setIsAlreadySigned(false);
     onClearFile?.();
     success('✓ Datos de firma limpiados');

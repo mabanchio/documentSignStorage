@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 
-// Mock de contratos para desarrollo sin Anvil
-const MOCK_CONTRACT_ADDRESS = '0x1234567890123456789012345678901234567890';
-
 interface MetaMaskContextType {
   account: string | null;
   isConnected: boolean;

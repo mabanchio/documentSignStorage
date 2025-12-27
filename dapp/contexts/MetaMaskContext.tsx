@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Wallet, JsonRpcProvider, Contract } from 'ethers';
+import { Wallet, JsonRpcProvider } from 'ethers';
 
 // Wallets de prueba de Anvil
 const ANVIL_PRIVATE_KEYS = [
@@ -33,6 +33,7 @@ interface MetaMaskContextType {
 const MetaMaskContext = createContext<MetaMaskContextType | undefined>(undefined);
 
 export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
+  const useMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
   const [account, setAccount] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
@@ -50,6 +51,17 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
   // Conectar con wallet seleccionada
   const connect = useCallback(async () => {
     try {
+      if (useMockMode) {
+        // Modo mock: usar wallets simuladas sin conectar a blockchain
+        const privateKey = ANVIL_PRIVATE_KEYS[selectedWalletIndex];
+        const mockWallet = new Wallet(privateKey);
+        setWallet(mockWallet);
+        setAccount(mockWallet.address);
+        setIsConnected(true);
+        console.log('[MetaMask - MOCK] Wallet conectado (sin blockchain):', mockWallet.address);
+        return;
+      }
+
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
       const newProvider = new JsonRpcProvider(rpcUrl);
       setProvider(newProvider);
@@ -66,7 +78,7 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
       console.error('[MetaMask] Error conectando:', error);
       throw error;
     }
-  }, [selectedWalletIndex]);
+  }, [selectedWalletIndex, useMockMode]);
 
   // Desconectar
   const disconnect = useCallback(() => {
@@ -79,6 +91,16 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
   // Cambiar wallet
   const switchWallet = useCallback(async (index: number) => {
     try {
+      if (useMockMode) {
+        const privateKey = ANVIL_PRIVATE_KEYS[index];
+        const mockWallet = new Wallet(privateKey);
+        setSelectedWalletIndex(index);
+        setWallet(mockWallet);
+        setAccount(mockWallet.address);
+        console.log('[MetaMask - MOCK] Wallet cambiado (sin blockchain) a:', mockWallet.address);
+        return;
+      }
+
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
       const newProvider = new JsonRpcProvider(rpcUrl);
 
@@ -95,7 +117,7 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
       console.error('[MetaMask] Error cambiando wallet:', error);
       throw error;
     }
-  }, []);
+  }, [useMockMode]);
 
   // Firmar mensaje
   const signMessage = useCallback(async (message: string) => {

@@ -83,7 +83,9 @@ export function useFileHash() {
 async function calculateSHA256(data: Uint8Array): Promise<string> {
   try {
     // Usar Web Crypto API disponible en navegadores modernos
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    // Crear un ArrayBuffer nuevo con los datos del Uint8Array
+    const buffer = data.buffer as ArrayBuffer;
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
     return bytesToHex(new Uint8Array(hashBuffer));
   } catch (error) {
     console.error('[FileHash] Error con SubtleCrypto:', error);
