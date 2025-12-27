@@ -218,7 +218,10 @@ Abre http://localhost:3000
 
 **Paso 3: Desplegar Contrato a Sepolia**
 ```bash
-npm run deploy:sepolia
+forge script script/Deploy.s.sol \
+  --rpc-url https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161 \
+  --broadcast \
+  --verify
 ```
 
 Anota la dirección del contrato que aparece.
@@ -283,9 +286,33 @@ Si ejecutas Ganache localmente, las variables se configuran automáticamente:
 
 ### Desplegar Contrato en Ganache
 
+**Terminal 3: Desplegar (después de que Ganache está corriendo)**
+
 ```bash
-npm run deploy:ganache
+# Con forge si tienes Foundry instalado:
+forge script script/Deploy.s.sol \
+  --rpc-url http://localhost:8545 \
+  --broadcast \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
+
+O usa el script npm si existe:
+```bash
+npm run deploy
+```
+
+**Anota la dirección** que aparezca como `DocumentRegistry deployed at: 0x...`
+
+Luego **configura la dirección en dApp**:
+```powershell
+@"
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x<DIRECCIÓN_DEL_PASO_ANTERIOR>
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+NEXT_PUBLIC_CHAIN_ID=1337
+"@ | Set-Content -Path "dapp\.env.local"
+```
+
+Reinicia la dApp y ¡listo! Ya puedes firmar documentos en blockchain.
 
 ## Uso de la Aplicación
 
@@ -389,14 +416,15 @@ forge test --match-test testGetSignatureRecord
 ## Comandos Útiles
 
 ```bash
-# Iniciar Ganache
+# Iniciar Ganache (blockchain local)
 npm run ganache
+# O manualmente: npx ganache-cli --accounts 10 --balance 1000 --port 8545
 
-# Desplegar en Ganache
-npm run deploy:ganache
+# Desplegar contrato en Ganache
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 # Desplegar en Sepolia
-npm run deploy:sepolia
+forge script script/Deploy.s.sol --rpc-url https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161 --broadcast --verify
 
 # Testing
 npm run test
