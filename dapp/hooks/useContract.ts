@@ -1,51 +1,71 @@
 import { useMemo } from 'react';
-import { Contract } from 'ethers';
+import { Contract, Wallet, JsonRpcProvider, BrowserProvider } from 'ethers';
 import { useMetaMask } from '@/contexts/MetaMaskContext';
 
 // ABI del contrato DocumentRegistry
 const DOCUMENT_REGISTRY_ABI = [
   'function storeDocumentHash(bytes32 hash, uint256 timestamp, bytes signature) external',
+  'function storeSignature(bytes32 hash, string documentName, uint256 timestamp, bytes signature) external',
   'function verifyDocument(bytes32 hash, address signer, bytes signature) external view returns (bool)',
   'function getDocumentInfo(bytes32 hash) external view returns ((bytes32, uint256, address, bytes, bool))',
+  'function getSignatureRecord(bytes32 hash) external view returns ((string, address, uint256, bytes, bool))',
   'function isDocumentStored(bytes32 hash) external view returns (bool)',
   'function getDocumentSignature(bytes32 hash) external view returns (bytes)',
+  'function getUserDocuments(address signer) external view returns (bytes32[])',
 ];
 
 export function useContract() {
-  const useMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
-  const { getWallet, getProvider } = useMetaMask();
+  const { getWallet, getProvider, account, isConnected } = useMetaMask();
 
   const contract = useMemo(() => {
     try {
       const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+      console.log('[useContract] Recalculando contrato. ConnectStatus:', {
+        isConnected,
+        account,
+        contractAddress
+      });
+
       if (!contractAddress) {
         console.warn('[useContract] CONTRACT_ADDRESS no configurada');
-        return null;
+        return {
+          readonly: null,
+          writable: null,
+          address: null,
+        };
       }
 
-      // En modo mock, devolvemos un contrato simulado
-      if (useMockMode) {
-        console.warn('[useContract] MODO MOCK - Contrato simulado');
+      // Obtener wallet y provider
+      const wallet = getWallet();
+      const provider = getProvider();
+
+      console.log('[useContract] Obtenidos:', {
+        hasWallet: !!wallet,
+        walletAddress: wallet?.address,
+        hasProvider: !!provider,
+        providerUrl: provider?.connection?.url
+      });
+
+      if (!wallet || !provider) {
+        console.warn('[useContract] Wallet o Provider no disponible', { wallet, provider });
         return {
-          readonly: new MockContract(),
-          writable: new MockContract(),
+          readonly: null,
+          writable: null,
           address: contractAddress,
         };
       }
 
-      const wallet = getWallet();
-      if (!wallet) {
-        console.warn('[useContract] Wallet no disponible');
-        return null;
-      }
-
+      // Crear contrato de lectura con el provider
       const readonlyContract = new Contract(
         contractAddress,
         DOCUMENT_REGISTRY_ABI,
-        wallet.provider
+        provider
       );
 
+      // Crear contrato de escritura conectando la wallet
       const writableContract = readonlyContract.connect(wallet);
+
+      console.log('[useContract] ✓ Contrato creado exitosamente');
 
       return {
         readonly: readonlyContract,
@@ -54,9 +74,13 @@ export function useContract() {
       };
     } catch (error) {
       console.error('[useContract] Error creando contrato:', error);
-      return null;
+      return {
+        readonly: null,
+        writable: null,
+        address: null,
+      };
     }
-  }, [getWallet, getProvider, useMockMode]);
+  }, [getWallet, getProvider, account, isConnected]);
 
   return contract;
 }
