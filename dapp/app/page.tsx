@@ -6,17 +6,31 @@ import {
   FileUploader,
   DocumentSigner,
   DocumentVerifier,
+  DocumentLibrary,
+  MultiDocumentSigner,
 } from '@/components';
+import { type SignedDocument } from '@/utils/documentStorage';
 import { FileText } from 'lucide-react';
 
 export default function Home() {
   const [documentHash, setDocumentHash] = useState('');
   const [fileName, setFileName] = useState('');
-  const [activeTab, setActiveTab] = useState<'sign' | 'verify'>('sign');
+  const [activeTab, setActiveTab] = useState<'sign' | 'multi' | 'verify' | 'library'>('sign');
+  const [preloadedDocument, setPreloadedDocument] = useState<SignedDocument | null>(null);
 
   const handleHashCalculated = (hash: string, fname: string) => {
     setDocumentHash(hash);
     setFileName(fname);
+  };
+
+  const handleSignedDocumentFound = (document: SignedDocument) => {
+    setPreloadedDocument(document);
+    setActiveTab('verify');
+  };
+
+  const handleClearFile = () => {
+    setDocumentHash('');
+    setFileName('');
   };
 
   return (
@@ -26,7 +40,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText size={28} className="text-primary" />
-            <h1 className="text-2xl font-bold text-gray-900">Document Registry</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Verificador de Documentos</h1>
           </div>
           <WalletSelector />
         </div>
@@ -57,38 +71,72 @@ export default function Home() {
             >
               Verificar Documento
             </button>
+            <button
+              onClick={() => setActiveTab('multi')}
+              className={`py-2 px-4 border-b-2 font-semibold transition ${
+                activeTab === 'multi'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Múltiples Documentos
+            </button>
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`py-2 px-4 border-b-2 font-semibold transition ${
+                activeTab === 'library'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Biblioteca
+            </button>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - File Upload */}
-          <div>
-            <h2 className="text-lg font-bold mb-4 text-gray-900">Selecciona un Archivo</h2>
-            <FileUploader onHashCalculated={handleHashCalculated} />
+        {activeTab === 'library' ? (
+          <DocumentLibrary />
+        ) : activeTab === 'multi' ? (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar Múltiples Documentos</h2>
+            <MultiDocumentSigner />
           </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - File Upload */}
+            <div>
+              <h2 className="text-lg font-bold mb-4 text-gray-900">Selecciona un Archivo</h2>
+              <FileUploader 
+                onHashCalculated={handleHashCalculated}
+                onSignedDocumentFound={handleSignedDocumentFound}
+                onClearExistingDocument={handleClearFile}
+              />
+            </div>
 
-          {/* Right Column - Actions */}
-          <div className="lg:col-span-2">
-            {activeTab === 'sign' ? (
-              <>
-                <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar y Almacenar</h2>
-                <DocumentSigner
-                  documentHash={documentHash}
-                  fileName={fileName}
-                  onSigned={() => {
-                    // Aquí podrías hacer algo cuando el documento se firma
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <h2 className="text-lg font-bold mb-4 text-gray-900">Verificar</h2>
-                <DocumentVerifier />
-              </>
-            )}
+            {/* Right Column - Actions */}
+            <div className="lg:col-span-2">
+              {activeTab === 'sign' ? (
+                <>
+                  <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar y Almacenar</h2>
+                  <DocumentSigner
+                    documentHash={documentHash}
+                    fileName={fileName}
+                    onSigned={() => {
+                      // Aquí podrías hacer algo cuando el documento se firma
+                    }}
+                    onClearFile={handleClearFile}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-bold mb-4 text-gray-900">Verificar</h2>
+                  <DocumentVerifier preloadedDocument={preloadedDocument} />
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Info Section */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -133,7 +181,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white text-center py-4 mt-16">
         <p className="text-sm">
-          &copy; 2025 Document Registry - dApp de Verificación de Documentos
+          &copy; 2025 Verificador de Documentos - dApp de Firmas Digitales en Blockchain
         </p>
       </footer>
     </div>
