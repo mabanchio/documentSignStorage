@@ -20,8 +20,6 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
   const [signature, setSignature] = useState<string | null>(null);
   const [signedMessage, setSignedMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAlreadySigned, setIsAlreadySigned] = useState(false);
 
@@ -51,10 +49,10 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
       return;
     }
 
-    // Verificar si el documento ya existe en la biblioteca
+    // Verificar si el documento ya existe en el historial
     const existingDoc = getDocumentByFileHash(documentHash);
     if (existingDoc) {
-      warning(`⚠ Este documento ya se encuentra firmado en tu biblioteca`);
+      warning(`⚠ Este documento ya se encuentra firmado en tu historial`);
       return;
     }
 
@@ -76,6 +74,14 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         onSigned(sig);
       }
       success('✓ Documento firmado correctamente');
+      
+      // Guardar automáticamente en el historial
+      try {
+        saveSignedDocument(fileName, documentHash, message, sig);
+        info(`✓ Documento guardado automáticamente en tu historial`);
+      } catch (saveError) {
+        console.error('[DocumentSigner] Error guardando automáticamente:', saveError);
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setError(errorMsg);
@@ -85,34 +91,10 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
     }
   };
 
-  const handleStore = async () => {
-    if (!signature || !signedMessage || !documentHash || !fileName) {
-      errorToast('✗ Primero debes firmar el documento');
-      return;
-    }
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      // Guardar en almacenamiento local
-      saveSignedDocument(fileName, documentHash, signedMessage, signature);
-      setIsSaved(true);
-      success(`✓ Documento firmado guardado en la biblioteca`);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      setError(errorMsg);
-      errorToast('✗ Error guardando documento: ' + errorMsg);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleClear = () => {
     setSignature(null);
     setSignedMessage(null);
     setError(null);
-    setIsSaved(false);
     setIsAlreadySigned(false);
     onClearFile?.();
     success('✓ Datos de firma limpiados');
@@ -143,7 +125,7 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
           <AlertCircle size={16} className="text-yellow-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-yellow-700">Documento ya firmado</p>
-            <p className="text-xs text-yellow-600 mt-1">Este documento ya se encuentra en tu biblioteca. Selecciona otro archivo para firmar.</p>
+            <p className="text-xs text-yellow-600 mt-1">Este documento ya se encuentra en tu historial. Selecciona otro archivo para firmar.</p>
           </div>
         </div>
       )}
@@ -185,27 +167,20 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
 
           <div className="flex gap-2">
             <button
-              onClick={handleStore}
-              disabled={isSaving || isSaved}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition text-sm font-semibold"
-            >
-              {isSaving ? 'Guardando...' : isSaved ? '✓ Guardado' : 'Guardar en Biblioteca'}
-            </button>
-            <button
               onClick={handleClear}
-              className="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition text-sm font-semibold flex items-center justify-center gap-2"
+              className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition text-sm font-semibold flex items-center justify-center gap-2"
               title="Limpiar todos los datos"
             >
               <Trash2 size={16} />
+              Limpiar
             </button>
           </div>
 
-          {isSaved && (
-            <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
-              <p className="text-xs text-green-700 font-semibold">✓ Documento guardado en tu biblioteca</p>
-              <p className="text-xs text-green-600 mt-1">Accede a él en el listado de documentos</p>
-            </div>
-          )}
+          {/* Mensaje de confirmación */}
+          <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
+            <p className="text-xs text-green-700 font-semibold">✓ Documento guardado en tu historial</p>
+            <p className="text-xs text-green-600 mt-1">Accede a él en el historial de documentos</p>
+          </div>
         </>
       )}
     </div>

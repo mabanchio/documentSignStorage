@@ -6,7 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import {
   getSignedDocuments,
   searchDocuments,
-  deleteSignedDocument,
+  disableSignedDocument,
   type SignedDocument,
 } from '@/utils/documentStorage';
 import { CopyButton, formatAddress } from './CopyButton';
@@ -83,9 +83,9 @@ export function DocumentLibrary() {
 
   const confirmDelete = () => {
     if (deleteConfirmId) {
-      deleteSignedDocument(deleteConfirmId);
+      disableSignedDocument(deleteConfirmId, 'Usuario deshabilitó el documento');
       setDocuments(getSignedDocuments());
-      success('✓ Documento eliminado');
+      success('✓ Documento deshabilitado');
       setDeleteConfirmId(null);
       setDeleteConfirmName('');
     }
@@ -118,7 +118,7 @@ export function DocumentLibrary() {
   return (
     <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200 space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-sm">Biblioteca de Documentos ({filteredDocuments.length})</h3>
+        <h3 className="font-bold text-sm">Historial de Documentos ({filteredDocuments.length})</h3>
       </div>
 
       {/* Barra de búsqueda */}
@@ -241,7 +241,7 @@ export function DocumentLibrary() {
                         ? 'bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
-                    title={account && account.toLowerCase() !== doc.signerAddress.toLowerCase() ? 'Solo el firmante puede eliminar' : 'Eliminar documento'}
+                    title={account && account.toLowerCase() !== doc.signerAddress.toLowerCase() ? 'Solo el firmante puede deshabilitar' : 'Deshabilitar documento'}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -258,27 +258,28 @@ export function DocumentLibrary() {
         </p>
       )}
 
-      {/* Modal de Confirmación de Eliminación */}
+      {/* Modal de Confirmación de Deshabilitación */}
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-              <h3 className="font-bold text-white text-lg">Confirmar Eliminación</h3>
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-4">
+              <h3 className="font-bold text-white text-lg">Confirmar Deshabilitación</h3>
             </div>
 
             {/* Content */}
             <div className="px-6 py-4 space-y-3">
               <p className="text-gray-700 text-sm">
-                ¿Estás seguro de que deseas eliminar este documento?
+                ¿Estás seguro de que deseas deshabilitar este documento?
               </p>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-xs text-gray-600 mb-1">Documento:</p>
-                <p className="font-mono text-sm text-red-700 break-all font-semibold">{deleteConfirmName}</p>
+                <p className="font-mono text-sm text-yellow-700 break-all font-semibold">{deleteConfirmName}</p>
               </div>
-              <p className="text-xs text-gray-500">
-                Esta acción no se puede deshacer.
-              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+                <p className="font-semibold mb-1">ℹ Nota sobre inmutabilidad:</p>
+                <p>El documento no será eliminado. Se deshabilitará respetando el principio de inmutabilidad de la blockchain. Puedes ver el registro en la auditoría.</p>
+              </div>
             </div>
 
             {/* Actions */}
@@ -291,9 +292,9 @@ export function DocumentLibrary() {
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold text-sm"
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold text-sm"
               >
-                Eliminar
+                Deshabilitar
               </button>
             </div>
           </div>

@@ -9,6 +9,9 @@ export interface SignedDocument {
   signerAddress: string;
   timestamp: number;
   createdAt: string; // ISO string para display
+  disabled?: boolean; // Marca si el documento está deshabilitado (en lugar de eliminado)
+  disabledAt?: string; // Fecha de deshabilitación
+  disabledReason?: string; // Razón de la deshabilitación
 }
 
 const STORAGE_KEY = 'documentSignStorage_signedDocuments';
@@ -54,9 +57,24 @@ export function saveSignedDocument(
 }
 
 /**
- * Obtiene todos los documentos firmados almacenados
+ * Obtiene todos los documentos firmados almacenados (solo activos, excluye deshabilitados)
  */
 export function getSignedDocuments(): SignedDocument[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const documents = stored ? JSON.parse(stored) : [];
+    // Filtra solo documentos activos (no deshabilitados)
+    return documents.filter((doc: SignedDocument) => !doc.disabled);
+  } catch (error) {
+    console.error('[DocumentStorage] Error obteniendo documentos:', error);
+    return [];
+  }
+}
+
+/**
+ * Obtiene todos los documentos incluidos los deshabilitados
+ */
+export function getAllDocuments(): SignedDocument[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -75,7 +93,7 @@ export function getSignedDocumentById(id: string): SignedDocument | null {
 }
 
 /**
- * Obtiene un documento por hash de archivo
+ * Obtiene un documento por hash de archivo (solo si está activo)
  */
 export function getDocumentByFileHash(fileHash: string): SignedDocument | null {
   const documents = getSignedDocuments();
@@ -127,33 +145,110 @@ export function searchDocuments(query: string): SignedDocument[] {
 }
 
 /**
- * Elimina un documento del almacenamiento
+ * Deshabilita un documento (en lugar de eliminarlo, respetando la inmutabilidad)
+ * Mantiene el registro pero lo marca como deshabilitado
  */
-export function deleteSignedDocument(id: string): boolean {
+export function disableSignedDocument(id: string, reason?: string): boolean {
   try {
-    const documents = getSignedDocuments();
-    const filtered = documents.filter((doc) => doc.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    console.log('[DocumentStorage] Documento eliminado:', id);
+    const documents = getAllDocuments();
+    const documentIndex = documents.findIndex((doc) => doc.id === id);
+    
+    if (documentIndex === -1) {
+      console.error('[DocumentStorage] Documento no encontrado:', id);
+      return false;
+    }
+
+    // Marcar el documento como deshabilitado en lugar de eliminarlo
+    documents[documentIndex].disabled = true;
+    documents[documentIndex].disabledAt = new Date().toLocaleString('es-ES');
+    documents[documentIndex].disabledReason = reason || 'Usuario deshabilitó el documento';
+
+    // Guardar en localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    console.log('[DocumentStorage] Documento deshabilitado:', id);
     return true;
   } catch (error) {
-    console.error('[DocumentStorage] Error eliminando documento:', error);
+    console.error('[DocumentStorage] Error deshabilitando documento:', error);
     return false;
   }
 }
 
 /**
+ * Re-habilita un documento previamente deshabilitado
+ */
+export function enableSignedDocument(id: string): boolean {
+  try {
+    const documents = getAllDocuments();
+    const documentIndex = documents.findIndex((doc) => doc.id === id);
+    
+    if (documentIndex === -1) {
+      console.error('[DocumentStorage] Documento no encontrado:', id);
+      return false;
+    }
+
+    // Habilitar el documento
+    documents[documentIndex].disabled = false;
+    delete documents[documentIndex].disabledAt;
+    delete documents[documentIndex].disabledReason;
+
+    // Guardar en localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    console.log('[DocumentStorage] Documento habilitado:', id);
+    return true;
+  } catch (error) {
+    console.error('[DocumentStorage] Error habilitando documento:', error);
+    return false;
+  }
+}
+
+/**
+ * Obtiene documentos deshabilitados para auditoría
+ */
+export function getDisabledDocuments(): SignedDocument[] {
+  const documents = getAllDocuments();
+  return documents.filter((doc) => doc.disabled === true);
+}
+
+/**
+ * @deprecated Usar disableSignedDocument en su lugar
+ * Elimina un documento del almacenamiento
+ */
+export function deleteSignedDocument(id: string): boolean {
+  console.warn('[DocumentStorage] deleteSignedDocument está deprecado. Use disableSignedDocument en su lugar.');
+  return disableSignedDocument(id, 'Eliminado por método deprecado');
+}
+
+/**
+ * Deshabilita todos los documentos almacenados (respetando inmutabilidad)
+ */
+export function disableAllDocuments(reason?: string): boolean {
+  try {
+    const documents = getAllDocuments();
+    const now = new Date().toLocaleString('es-ES');
+    const defaultReason = reason || 'Usuario deshabilitó todos los documentos';
+    
+    documents.forEach((doc) => {
+      doc.disabled = true;
+      doc.disabledAt = now;
+      doc.disabledReason = defaultReason;
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(documents));
+    console.log('[DocumentStorage] Todos los documentos fueron deshabilitados');
+    return true;
+  } catch (error) {
+    console.error('[DocumentStorage] Error deshabilitando documentos:', error);
+    return false;
+  }
+}
+
+/**
+ * @deprecated Usar disableAllDocuments en su lugar
  * Limpia todos los documentos almacenados
  */
 export function clearAllDocuments(): boolean {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('[DocumentStorage] Todos los documentos fueron eliminados');
-    return true;
-  } catch (error) {
-    console.error('[DocumentStorage] Error limpiando documentos:', error);
-    return false;
-  }
+  console.warn('[DocumentStorage] clearAllDocuments está deprecado. Use disableAllDocuments en su lugar.');
+  return disableAllDocuments('Limpiado por método deprecado');
 }
 
 /**

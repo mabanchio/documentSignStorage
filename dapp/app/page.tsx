@@ -7,6 +7,7 @@ import {
   DocumentSigner,
   DocumentVerifier,
   DocumentLibrary,
+  DisabledDocumentsAudit,
   MultiDocumentSigner,
 } from '@/components';
 import { type SignedDocument } from '@/utils/documentStorage';
@@ -15,7 +16,7 @@ import { FileText } from 'lucide-react';
 export default function Home() {
   const [documentHash, setDocumentHash] = useState('');
   const [fileName, setFileName] = useState('');
-  const [activeTab, setActiveTab] = useState<'sign' | 'multi' | 'verify' | 'library'>('sign');
+  const [activeTab, setActiveTab] = useState<'sign' | 'multi' | 'verify' | 'library' | 'audit'>('sign');
   const [preloadedDocument, setPreloadedDocument] = useState<SignedDocument | null>(null);
 
   const handleHashCalculated = (hash: string, fname: string) => {
@@ -89,13 +90,28 @@ export default function Home() {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Biblioteca
+              Historial
+            </button>
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`py-2 px-4 border-b-2 font-semibold transition ${
+                activeTab === 'audit'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Auditoría
             </button>
           </div>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'library' ? (
+        {activeTab === 'audit' ? (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-lg font-bold mb-4 text-gray-900">Auditoría de Documentos Deshabilitados</h2>
+            <DisabledDocumentsAudit />
+          </div>
+        ) : activeTab === 'library' ? (
           <DocumentLibrary />
         ) : activeTab === 'multi' ? (
           <div className="max-w-2xl mx-auto">

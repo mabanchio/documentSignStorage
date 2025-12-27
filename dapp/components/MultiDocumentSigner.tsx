@@ -142,7 +142,7 @@ export function MultiDocumentSigner() {
     if (count > 0) {
       setSavedCount(count);
       setShowSaveConfirmation(true);
-      success(`✓ ${count} documento(s) guardado(s) en la biblioteca`);
+      success(`✓ ${count} documento(s) guardado(s) en el historial`);
     }
   };
 
@@ -312,7 +312,7 @@ export function MultiDocumentSigner() {
               </div>
 
               <p className="text-xs text-gray-600 text-center">
-                Todos los documentos están disponibles en la pestaña <span className="font-semibold">"Biblioteca"</span>
+                Todos los documentos están disponibles en la pestaña <span className="font-semibold">"Historial"</span>
               </p>
             </div>
 
