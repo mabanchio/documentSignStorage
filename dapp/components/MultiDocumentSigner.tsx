@@ -156,7 +156,7 @@ export function MultiDocumentSigner() {
             fileName: file.name,
             fileHash,
             message: `Guardado en blockchain: ${file.name}\nHash: ${fileHash}`,
-            signature: receipt?.hash || '', // Guardar tx hash como referencia
+            signature: '', // Sin referencia a tx en caso de error
             status: 'error',
             error: errorMsg,
           });
