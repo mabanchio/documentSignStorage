@@ -97,12 +97,12 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         });
 
         // Llamar a storeSignature en el contrato con gas limit explícito
-        // Firma vacía - la transacción blockchain ya proporciona autenticidad
+        // Bytes vacío - la transacción blockchain ya proporciona autenticidad
         const tx = await contract.writable.storeSignature(
           hashBytes32,
           fileName,
           BigInt(ts),
-          '', // Sin firma local
+          '0x', // Bytes vacío válido
           {
             gasLimit: 500000n  // Aumentar límite de gas
           }

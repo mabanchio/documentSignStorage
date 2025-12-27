@@ -137,7 +137,7 @@ export function MultiDocumentSigner() {
             hashBytes32,
             file.name,
             BigInt(ts),
-            '', // Firma vacía - la transacción blockchain ya proporciona autenticidad
+            '0x', // Bytes vacío válido en lugar de string vacía
             { gasLimit: 500000n }
           );
 
