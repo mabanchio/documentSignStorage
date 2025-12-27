@@ -108,6 +108,51 @@ contract DocumentRegistry is IDocumentRegistry {
     }
 
     /**
+     * @dev Almacena un documento sin requerir firma
+     * Usa msg.sender como autenticidad (transacción blockchain)
+     * @param hash Hash del documento
+     * @param documentName Nombre del documento
+     * @param timestamp Timestamp de cuándo se almacena
+     */
+    function storeDocument(
+        bytes32 hash,
+        string calldata documentName,
+        uint256 timestamp
+    ) external {
+        require(hash != bytes32(0), "DocumentRegistry: Hash cannot be zero");
+        require(bytes(documentName).length > 0, "DocumentRegistry: Document name cannot be empty");
+
+        // Usar msg.sender como signer (el que envía la transacción)
+        address signer = msg.sender;
+
+        // Almacenar la firma sin firma criptográfica
+        signatures[hash] = SignatureRecord({
+            documentName: documentName,
+            signer: signer,
+            timestamp: timestamp,
+            signature: bytes(''), // Sin firma
+            verified: true
+        });
+
+        // También guardar la referencia en documents
+        if (!documents[hash].exists) {
+            documents[hash] = Document({
+                hash: hash,
+                timestamp: timestamp,
+                signer: signer,
+                signature: bytes(''),
+                exists: true
+            });
+        }
+
+        // Registrar el documento para el usuario
+        userDocuments[signer].push(hash);
+
+        // Emitir evento
+        emit DocumentStored(hash, signer, timestamp, bytes(''));
+    }
+
+    /**
      * @dev Obtiene la información de una firma guardada
      * @param hash Hash del documento
      * @return record Información de la firma

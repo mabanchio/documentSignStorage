@@ -133,11 +133,10 @@ export function MultiDocumentSigner() {
             hashBytes32
           });
 
-          const tx = await contract.writable.storeSignature(
+          const tx = await contract.writable.storeDocument(
             hashBytes32,
             file.name,
             BigInt(ts),
-            '0x', // Bytes vacío válido en lugar de string vacía
             { gasLimit: 500000n }
           );
 
