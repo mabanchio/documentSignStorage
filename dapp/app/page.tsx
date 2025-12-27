@@ -102,6 +102,11 @@ export default function Home() {
             <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar Múltiples Documentos</h2>
             <MultiDocumentSigner />
           </div>
+        ) : activeTab === 'verify' ? (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-lg font-bold mb-4 text-gray-900">Verificar Documento</h2>
+            <DocumentVerifier preloadedDocument={preloadedDocument} />
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - File Upload */}
@@ -116,24 +121,15 @@ export default function Home() {
 
             {/* Right Column - Actions */}
             <div className="lg:col-span-2">
-              {activeTab === 'sign' ? (
-                <>
-                  <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar y Almacenar</h2>
-                  <DocumentSigner
-                    documentHash={documentHash}
-                    fileName={fileName}
-                    onSigned={() => {
-                      // Aquí podrías hacer algo cuando el documento se firma
-                    }}
-                    onClearFile={handleClearFile}
-                  />
-                </>
-              ) : (
-                <>
-                  <h2 className="text-lg font-bold mb-4 text-gray-900">Verificar</h2>
-                  <DocumentVerifier preloadedDocument={preloadedDocument} />
-                </>
-              )}
+              <h2 className="text-lg font-bold mb-4 text-gray-900">Firmar y Almacenar</h2>
+              <DocumentSigner
+                documentHash={documentHash}
+                fileName={fileName}
+                onSigned={() => {
+                  // Aquí podrías hacer algo cuando el documento se firma
+                }}
+                onClearFile={handleClearFile}
+              />
             </div>
           </div>
         )}
