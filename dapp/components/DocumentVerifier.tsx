@@ -188,18 +188,19 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
       <h3 className="font-bold text-sm mb-3">Verificar Documento</h3>
 
       <div className="space-y-3">
-        {/* File uploader con drag & drop */}
+        {/* File uploader con drag & drop - ÚNICO ESPACIO */}
         <div
           ref={fileDropRef}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`p-4 border-2 border-dashed rounded-lg transition cursor-pointer ${
+          onClick={() => fileName === '' && fileInputRef.current?.click()}
+          className={`p-4 border-2 border-dashed rounded-lg transition ${
             dragActive
               ? 'border-purple-600 bg-purple-100'
               : 'border-gray-300 bg-white'
-          }`}
+          } ${fileName === '' ? 'cursor-pointer' : ''}`}
         >
           <label className="text-xs font-semibold text-gray-700 block mb-3">Archivo a Verificar</label>
           
@@ -217,9 +218,15 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
               <p className="text-xs text-gray-500">O arrastra otro archivo para reemplazarlo</p>
             </div>
           ) : (
-            <div className="text-center py-4">
+            <div className="text-center py-6">
               <p className="text-sm font-semibold text-gray-600 mb-2">Ningún archivo seleccionado</p>
-              <p className="text-xs text-gray-500">Arrastra un archivo o haz clic para seleccionar</p>
+              <p className="text-xs text-gray-500 mb-3">Arrastra un archivo o haz clic para seleccionar</p>
+              <button
+                type="button"
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm font-semibold"
+              >
+                Selecciona un Archivo
+              </button>
             </div>
           )}
           
@@ -232,16 +239,6 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-        
-        {/* Botón para seleccionar archivo */}
-        {!fileName && (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-semibold"
-          >
-            Selecciona un Archivo
-          </button>
-        )}
 
         {/* Aviso de archivo firmado encontrado */}
         {loadedDocumentData && (
