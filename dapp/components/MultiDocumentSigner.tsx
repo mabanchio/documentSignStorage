@@ -19,7 +19,7 @@ interface SignedFileData {
 }
 
 export function MultiDocumentSigner() {
-  const { isConnected, signMessage } = useMetaMask();
+  const { isConnected, signMessage, account } = useMetaMask();
   const contract = useContract();
   const { success, error: errorToast, info } = useToast();
   const [files, setFiles] = useState<File[]>([]);
@@ -184,7 +184,7 @@ export function MultiDocumentSigner() {
         // 3. Si blockchain OK → Guardar en localStorage
         if (blockchainSuccess) {
           const message = `Guardado en blockchain: ${file.name}\nHash: ${fileHash}`;
-          saveSignedDocument(file.name, fileHash, message, ''); // Firma vacía
+          saveSignedDocument(file.name, fileHash, message, '', account); // Pasar dirección de wallet
 
           newSignedFiles.set(fileKey, {
             fileName: file.name,

@@ -23,11 +23,23 @@ export function saveSignedDocument(
   fileName: string,
   fileHash: string,
   message: string,
-  signature: string
+  signature: string,
+  signerAddress?: string
 ): SignedDocument {
   try {
     // Recuperar la dirección del firmante
-    const signerAddress = recoverSignerAddress(message, signature);
+    // Si no hay firma (vacía), usar la dirección proporcionada
+    let address = signerAddress;
+    
+    if (!address && signature && signature !== '' && signature !== '0x') {
+      // Solo intentar recuperar si hay una firma válida
+      try {
+        address = recoverSignerAddress(message, signature);
+      } catch (error) {
+        console.warn('[DocumentStorage] No se pudo recuperar dirección de firma:', error);
+        // Continuar sin dirección del signer
+      }
+    }
 
     const timestamp = Date.now();
     const document: SignedDocument = {
@@ -36,7 +48,7 @@ export function saveSignedDocument(
       fileHash,
       message,
       signature,
-      signerAddress,
+      signerAddress: address || 'unknown',
       timestamp,
       createdAt: new Date(timestamp).toLocaleString('es-ES'),
     };

@@ -16,7 +16,7 @@ interface DocumentSignerProps {
 }
 
 export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }: DocumentSignerProps) {
-  const { isConnected, signMessage, getWallet } = useMetaMask();
+  const { isConnected, signMessage, getWallet, account } = useMetaMask();
   const { success, error: errorToast, info, warning } = useToast();
   const contract = useContract();
   const [signature, setSignature] = useState<string | null>(null);
@@ -161,7 +161,7 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
       if (blockchainSuccess) {
         try {
           const message = `Guardado en blockchain: ${fileName}\nHash: ${documentHash}`;
-          saveSignedDocument(fileName, documentHash, message, ''); // Firma vacía
+          saveSignedDocument(fileName, documentHash, message, '', account); // Pasar dirección de wallet
           info(`✓ Documento guardado en historial local`);
         } catch (saveError) {
           console.error('[DocumentSigner] Error guardando localmente:', saveError);
