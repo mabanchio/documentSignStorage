@@ -16,7 +16,7 @@ interface DocumentVerifierProps {
 export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileDropRef = useRef<HTMLDivElement>(null);
-  const { keccak256Hash, fileName, calculateHash } = useFileHash();
+  const { keccak256Hash, fileName, fileSize, calculateHash } = useFileHash();
   const { success, error: errorToast, warning, info } = useToast();
   const [dragActive, setDragActive] = useState(false);
 
@@ -208,6 +208,19 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs cursor-pointer"
           />
           <p className="text-xs text-gray-500 mt-2">O arrastra un archivo aquí</p>
+          
+          {/* Mostrar archivo cargado */}
+          {fileName && (
+            <div className="mt-3 p-2 bg-white rounded border border-purple-200">
+              <p className="text-xs text-gray-600 mb-1">Archivo cargado:</p>
+              <p className="text-xs font-semibold text-purple-700">{fileName}</p>
+              {fileSize && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Tamaño: {(fileSize / 1024).toFixed(2)} KB
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Aviso de archivo firmado encontrado */}
