@@ -1,20 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Wallet, JsonRpcProvider } from 'ethers';
+import { Wallet, JsonRpcProvider, BrowserProvider } from 'ethers';
 
-// Wallets de prueba de Anvil
-const ANVIL_PRIVATE_KEYS = [
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-  '0x59c6995e6f100ccd141f8bf8586221bd8a0c2469f5eefe7f592f1e22fdf8b9f5',
-  '0x5de4111afa1a4b94908f83103db48b3f2ad97a98fd93ac0e2ac2a10e9aafc43e',
-  '0xe2e7610b6bd4691606a7dc97e89c4b31cbf4e8992817234f7fae19b7b2c82999',
-  '0x15da8d1caf38423906938541723678aaaf63d63081eb281b12d9b822e414c4e1',
-  '0x4bbbf85ce3377467afe5d46723e98038dfa5ced26f655c7ecaaf43fe2b4b6d0d',
-  '0x70997970c51812e339d9b73b0245ad59c36cb495405ac7722cc2debb5a050c45',
-  '0x6c3927290329c912a6e9307c1ee4f2fcac00b21f9be86881859075d98f3b8267',
-  '0x02ca57573f23b82a349658418fcf4294813feb0706cdb0516c1b2ca3e41dff10',
-  '0x27a3693cd37582441cb3bca6519ac89c58503216bcc514f728fdd7ecf1e21ad8',
+// Wallets de prueba de Ganache como fallback
+const GANACHE_PRIVATE_KEYS = [
+  '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d',
+  '0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1',
+  '0x6370fd033278c143179d81c5526140625662b8daa446c22ee2d73db3707e620c',
+  '0xf2f48ee19680706196e2e339e5da3491186e0c4c5030670656b0e0164837257d',
+  '0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82',
+  '0xa267530f49f8280200edf313ee7257651b2118fa27d891dcbc385c1dcd366038',
+  '0x47e179ec197488593b187f80a00eb0da197161481a9c006cbe7ebeac5ebf4d3c',
+  '0xc526ee95bf44d8fc405a0501055ce25ee236dcebc3f83f43d5e688a0b41c15ee',
+  '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e8175e5e27f93',
+  '0x47b6160c8c2fbda25eeb2b34f09e9e2c9ae57a43a0fe52e47be837d31e9f2d0e',
 ];
 
 interface MetaMaskContextType {
@@ -25,60 +25,71 @@ interface MetaMaskContextType {
   disconnect: () => void;
   switchWallet: (index: number) => Promise<void>;
   signMessage: (message: string) => Promise<string>;
-  getProvider: () => JsonRpcProvider | null;
+  getProvider: () => JsonRpcProvider | BrowserProvider | null;
   getWallet: () => Wallet | null;
   availableWallets: Array<{ index: number; address: string }>;
+  isUsingMetaMask: boolean;
 }
 
 const MetaMaskContext = createContext<MetaMaskContextType | undefined>(undefined);
 
 export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
-  const useMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
   const [account, setAccount] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedWalletIndex, setSelectedWalletIndex] = useState<number>(0);
   const [wallet, setWallet] = useState<Wallet | null>(null);
-  const [provider, setProvider] = useState<JsonRpcProvider | null>(null);
+  const [provider, setProvider] = useState<JsonRpcProvider | BrowserProvider | null>(null);
+  const [isUsingMetaMask, setIsUsingMetaMask] = useState(false);
 
-  // Inicializar provider
-  const initializeProvider = useCallback(() => {
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
-    const newProvider = new JsonRpcProvider(rpcUrl);
-    setProvider(newProvider);
-    return newProvider;
-  }, []);
-
-  // Conectar con wallet seleccionada
+  // Conectar con MetaMask o wallets simuladas
   const connect = useCallback(async () => {
     try {
-      if (useMockMode) {
-        // Modo mock: usar wallets simuladas sin conectar a blockchain
-        const privateKey = ANVIL_PRIVATE_KEYS[selectedWalletIndex];
-        const mockWallet = new Wallet(privateKey);
-        setWallet(mockWallet);
-        setAccount(mockWallet.address);
-        setIsConnected(true);
-        console.log('[MetaMask - MOCK] Wallet conectado (sin blockchain):', mockWallet.address);
-        return;
+      // Intentar conectar a MetaMask real
+      if (typeof window !== 'undefined' && window.ethereum) {
+        try {
+          // Solicitar acceso a cuentas
+          const accounts = await window.ethereum.request({ 
+            method: 'eth_requestAccounts' 
+          });
+          
+          if (accounts && accounts.length > 0) {
+            const browserProvider = new BrowserProvider(window.ethereum);
+            const signer = await browserProvider.getSigner();
+            
+            setProvider(browserProvider);
+            setWallet(signer as any);
+            setAccount(accounts[0]);
+            setIsConnected(true);
+            setIsUsingMetaMask(true);
+            
+            console.log('[MetaMask REAL] Conectado a:', accounts[0]);
+            return;
+          }
+        } catch (error) {
+          console.warn('[MetaMask] Error conectando a extensión real:', error);
+        }
       }
 
+      // Fallback: usar wallets simuladas de Ganache
+      console.log('[MetaMask] Usando wallet simulada (Ganache)');
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
       const newProvider = new JsonRpcProvider(rpcUrl);
-      setProvider(newProvider);
-
-      const privateKey = ANVIL_PRIVATE_KEYS[selectedWalletIndex];
+      
+      const privateKey = GANACHE_PRIVATE_KEYS[selectedWalletIndex];
       const newWallet = new Wallet(privateKey, newProvider);
 
+      setProvider(newProvider);
       setWallet(newWallet);
       setAccount(newWallet.address);
       setIsConnected(true);
+      setIsUsingMetaMask(false);
 
-      console.log('[MetaMask] Wallet conectado:', newWallet.address);
+      console.log('[MetaMask Simulado] Conectado a:', newWallet.address);
     } catch (error) {
       console.error('[MetaMask] Error conectando:', error);
       throw error;
     }
-  }, [selectedWalletIndex, useMockMode]);
+  }, [selectedWalletIndex]);
 
   // Desconectar
   const disconnect = useCallback(() => {
@@ -91,20 +102,15 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
   // Cambiar wallet
   const switchWallet = useCallback(async (index: number) => {
     try {
-      if (useMockMode) {
-        const privateKey = ANVIL_PRIVATE_KEYS[index];
-        const mockWallet = new Wallet(privateKey);
-        setSelectedWalletIndex(index);
-        setWallet(mockWallet);
-        setAccount(mockWallet.address);
-        console.log('[MetaMask - MOCK] Wallet cambiado (sin blockchain) a:', mockWallet.address);
-        return;
+      // Solo cambiar si usamos wallets simuladas
+      if (isUsingMetaMask) {
+        throw new Error('No se pueden cambiar wallets cuando se usa MetaMask real');
       }
 
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
       const newProvider = new JsonRpcProvider(rpcUrl);
 
-      const privateKey = ANVIL_PRIVATE_KEYS[index];
+      const privateKey = GANACHE_PRIVATE_KEYS[index];
       const newWallet = new Wallet(privateKey, newProvider);
 
       setSelectedWalletIndex(index);
@@ -112,12 +118,12 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
       setAccount(newWallet.address);
       setProvider(newProvider);
 
-      console.log('[MetaMask] Wallet cambiado a:', newWallet.address);
+      console.log('[MetaMask] Wallet simulado cambiado a:', newWallet.address);
     } catch (error) {
       console.error('[MetaMask] Error cambiando wallet:', error);
       throw error;
     }
-  }, [useMockMode]);
+  }, [isUsingMetaMask]);
 
   // Firmar mensaje
   const signMessage = useCallback(async (message: string) => {
@@ -138,10 +144,11 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
   // Obtener provider
   const getProvider = useCallback(() => {
     if (!provider) {
-      return initializeProvider();
+      const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
+      return new JsonRpcProvider(rpcUrl);
     }
     return provider;
-  }, [provider, initializeProvider]);
+  }, [provider]);
 
   // Obtener wallet
   const getWallet = useCallback(() => {
@@ -149,7 +156,7 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
   }, [wallet]);
 
   // Obtener wallets disponibles
-  const availableWallets = ANVIL_PRIVATE_KEYS.map((privateKey, index) => ({
+  const availableWallets = GANACHE_PRIVATE_KEYS.map((privateKey, index) => ({
     index,
     address: new Wallet(privateKey).address,
   }));
@@ -165,6 +172,7 @@ export function MetaMaskProvider({ children }: { children: React.ReactNode }) {
     getProvider,
     getWallet,
     availableWallets,
+    isUsingMetaMask,
   };
 
   return (

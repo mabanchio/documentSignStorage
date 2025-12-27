@@ -7,7 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import { AddressDisplay } from './CopyButton';
 
 export function WalletSelector() {
-  const { account, isConnected, selectedWalletIndex, connect, disconnect, switchWallet, availableWallets } =
+  const { account, isConnected, selectedWalletIndex, connect, disconnect, switchWallet, availableWallets, isUsingMetaMask } =
     useMetaMask();
   const { success, error } = useToast();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -56,18 +56,21 @@ export function WalletSelector() {
     <div className="flex items-center gap-2">
       <div className="relative">
         <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          onClick={() => !isUsingMetaMask && setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
+          title={isUsingMetaMask ? 'Conectado con MetaMask' : 'Wallet simulada (Ganache)'}
         >
           <span className="text-sm">
             {account?.substring(0, 6)}...{account?.substring(account.length - 4)}
           </span>
-          <ChevronDown size={16} />
+          {!isUsingMetaMask && <ChevronDown size={16} />}
+          {isUsingMetaMask && <span className="text-xs ml-2">🦊 MetaMask</span>}
         </button>
 
-        {isDropdownOpen && (
+        {isDropdownOpen && !isUsingMetaMask && (
           <div className="absolute right-0 top-full mt-2 bg-white text-gray-800 rounded-lg shadow-lg z-10 min-w-xs">
             <div className="p-2 max-h-64 overflow-y-auto">
+              <p className="text-xs text-gray-500 px-4 py-2 font-semibold">Wallets Simuladas (Ganache)</p>
               {availableWallets.map((w) => (
                 <button
                   key={w.index}
