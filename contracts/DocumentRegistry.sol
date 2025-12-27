@@ -11,6 +11,21 @@ import "./interfaces/IDocumentRegistry.sol";
 contract DocumentRegistry is IDocumentRegistry {
     // Mapeo de hashes a información de documentos
     mapping(bytes32 => Document) private documents;
+    
+    // Mapeo de dirección -> array de hashes que firmó
+    mapping(address => bytes32[]) private userDocuments;
+    
+    // Estructura para almacenar información adicional de la firma
+    struct SignatureRecord {
+        string documentName;
+        address signer;
+        uint256 timestamp;
+        bytes signature;
+        bool verified;
+    }
+    
+    // Mapeo de hash -> SignatureRecord
+    mapping(bytes32 => SignatureRecord) private signatures;
 
     /**
      * @dev Almacena el hash de un documento con timestamp y firma
@@ -42,6 +57,81 @@ contract DocumentRegistry is IDocumentRegistry {
 
         // Emitir evento
         emit DocumentStored(hash, signer, timestamp, signature);
+    }
+
+    /**
+     * @dev Almacena una firma de documento con nombre
+     * @param hash Hash del documento
+     * @param documentName Nombre del documento
+     * @param timestamp Timestamp de la firma
+     * @param signature Firma digital
+     */
+    function storeSignature(
+        bytes32 hash,
+        string calldata documentName,
+        uint256 timestamp,
+        bytes calldata signature
+    ) external {
+        require(hash != bytes32(0), "DocumentRegistry: Hash cannot be zero");
+        require(signature.length > 0, "DocumentRegistry: Signature cannot be empty");
+        require(bytes(documentName).length > 0, "DocumentRegistry: Document name cannot be empty");
+
+        // Recuperar la dirección del firmante desde la firma
+        address signer = recoverSigner(hash, signature);
+        require(signer != address(0), "DocumentRegistry: Invalid signature");
+
+        // Almacenar la firma con información adicional
+        signatures[hash] = SignatureRecord({
+            documentName: documentName,
+            signer: signer,
+            timestamp: timestamp,
+            signature: signature,
+            verified: true
+        });
+
+        // También guardar la referencia en storeDocumentHash si no existe
+        if (!documents[hash].exists) {
+            documents[hash] = Document({
+                hash: hash,
+                timestamp: timestamp,
+                signer: signer,
+                signature: signature,
+                exists: true
+            });
+        }
+
+        // Registrar el documento para el usuario
+        userDocuments[signer].push(hash);
+
+        // Emitir evento
+        emit DocumentStored(hash, signer, timestamp, signature);
+    }
+
+    /**
+     * @dev Obtiene la información de una firma guardada
+     * @param hash Hash del documento
+     * @return record Información de la firma
+     */
+    function getSignatureRecord(bytes32 hash)
+        external
+        view
+        returns (SignatureRecord memory record)
+    {
+        require(signatures[hash].verified, "DocumentRegistry: Signature not found");
+        return signatures[hash];
+    }
+
+    /**
+     * @dev Obtiene los documentos firmados por un usuario
+     * @param signer Dirección del firmante
+     * @return hashes Array de hashes de documentos firmados
+     */
+    function getUserDocuments(address signer)
+        external
+        view
+        returns (bytes32[] memory hashes)
+    {
+        return userDocuments[signer];
     }
 
     /**

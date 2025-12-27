@@ -12,11 +12,11 @@ contract Deploy is Script {
     function setUp() public {}
 
     function run() public {
-        // Leer la clave privada del deployer desde las variables de entorno
-        // Para desarrollo, usa la primera cuenta de Anvil
+        // Usar la primera cuenta de Ganache con fondos
+        // 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d -> 0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1
         uint256 deployerPrivateKey = vm.envOr(
             "PRIVATE_KEY",
-            uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80)
+            uint256(0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d)
         );
 
         vm.startBroadcast(deployerPrivateKey);
