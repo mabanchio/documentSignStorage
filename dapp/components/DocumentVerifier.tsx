@@ -218,16 +218,7 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
               <p className="text-xs text-gray-500">O arrastra otro archivo para reemplazarlo</p>
             </div>
           ) : (
-            <div className="text-center py-6">
-              <p className="text-sm font-semibold text-gray-600 mb-2">Ningún archivo seleccionado</p>
-              <p className="text-xs text-gray-500 mb-3">Arrastra un archivo o haz clic para seleccionar</p>
-              <button
-                type="button"
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm font-semibold"
-              >
-                Selecciona un Archivo
-              </button>
-            </div>
+            <p className="text-xs text-gray-400 text-center py-3">Arrastra un archivo aquí</p>
           )}
           
           {/* Input file oculto */}
