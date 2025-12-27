@@ -126,6 +126,13 @@ export function MultiDocumentSigner() {
         // 2. Transacción blockchain (sin firma local previa)
         let blockchainSuccess = false;
         try {
+          console.log('[MultiDocumentSigner] Guardando documento:', {
+            fileHash,
+            fileName: file.name,
+            ts,
+            hashBytes32
+          });
+
           const tx = await contract.writable.storeSignature(
             hashBytes32,
             file.name,
@@ -134,13 +141,21 @@ export function MultiDocumentSigner() {
             { gasLimit: 500000n }
           );
 
+          console.log('[MultiDocumentSigner] Tx enviada:', tx.hash);
+
           // Esperar confirmación
           const receipt = await tx.wait(1);
+
+          console.log('[MultiDocumentSigner] Tx confirmada:', receipt?.hash);
 
           if (receipt) {
             blockchainSuccess = true;
           }
         } catch (blockchainError: any) {
+          console.error('[MultiDocumentSigner] Error blockchain:', blockchainError);
+          console.error('[MultiDocumentSigner] Error message:', blockchainError.message);
+          console.error('[MultiDocumentSigner] Error code:', blockchainError.code);
+          
           // Detectar tipo de error
           let errorMsg = 'Error en transacción blockchain';
 
@@ -150,6 +165,8 @@ export function MultiDocumentSigner() {
             errorMsg = 'Saldo insuficiente para pagar el gas';
           } else if (blockchainError.message?.includes('network') || blockchainError.message?.includes('connection')) {
             errorMsg = 'Error de conexión con la red';
+          } else if (blockchainError.message) {
+            errorMsg = blockchainError.message;
           }
 
           newSignedFiles.set(fileKey, {
