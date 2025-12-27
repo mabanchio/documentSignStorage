@@ -24,7 +24,6 @@ export function MultiDocumentSigner() {
   const [files, setFiles] = useState<File[]>([]);
   const [signedFiles, setSignedFiles] = useState<Map<string, SignedFileData>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSavingAll, setIsSavingAll] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
@@ -86,6 +85,11 @@ export function MultiDocumentSigner() {
       return;
     }
 
+    if (!contract.writable) {
+      errorToast('✗ Contrato no disponible');
+      return;
+    }
+
     setIsProcessing(true);
     const newSignedFiles = new Map(signedFiles);
     let successCount = 0;
@@ -93,70 +97,43 @@ export function MultiDocumentSigner() {
     for (const file of files) {
       try {
         const fileKey = `${file.name}_${file.size}`;
+        
+        // Si ya está guardado, saltar
         if (newSignedFiles.has(fileKey) && newSignedFiles.get(fileKey)?.status === 'saved') {
           continue;
         }
 
+        // Actualizar estado a "saving"
+        newSignedFiles.set(fileKey, {
+          fileName: file.name,
+          fileHash: '',
+          message: '',
+          signature: '',
+          status: 'saving',
+        });
+        setSignedFiles(new Map(newSignedFiles));
+
+        // 1. Calcular hash
         const fileHash = await calculateFileHash(file);
         const ts = Math.floor(Date.now() / 1000);
         const message = `Firmar documento: ${file.name}\nHash: ${fileHash}\nTimestamp: ${ts}`;
 
+        // 2. Firmar localmente
         const signature = await signMessage(message);
 
-        newSignedFiles.set(fileKey, {
-          fileName: file.name,
-          fileHash,
-          message,
-          signature,
-          status: 'signed',
-        });
-
-        successCount++;
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-        errorToast(`✗ Error firmando ${file.name}: ${errorMsg}`);
-      }
-    }
-
-    setSignedFiles(newSignedFiles);
-    setIsProcessing(false);
-
-    if (successCount > 0) {
-      success(`✓ ${successCount} documento(s) firmado(s) correctamente`);
-    }
-  };
-
-  const handleSaveAll = async () => {
-    if (!contract.writable) {
-      errorToast('✗ Contrato no disponible');
-      return;
-    }
-
-    setIsSavingAll(true);
-    let savedCount = 0;
-    const newSignedFiles = new Map(signedFiles);
-
-    for (const [fileKey, fileData] of newSignedFiles) {
-      if (fileData.status !== 'signed') continue;
-
-      try {
-        // Cambiar estado a 'saving'
-        fileData.status = 'saving';
-        setSignedFiles(new Map(newSignedFiles));
-
         // Preparar parámetros para blockchain
-        const hashBytes32 = fileData.fileHash.startsWith('0x')
-          ? fileData.fileHash.padEnd(66, '0')
-          : ('0x' + fileData.fileHash).padEnd(66, '0');
-        const ts = Math.floor(Date.now() / 1000);
+        const hashBytes32 = fileHash.startsWith('0x')
+          ? fileHash.padEnd(66, '0')
+          : ('0x' + fileHash).padEnd(66, '0');
 
-        // Transacción blockchain PRIMERO
+        // 3. Transacción blockchain PRIMERO
+        let blockchainSuccess = false;
         try {
           const tx = await contract.writable.storeSignature(
             hashBytes32,
-            fileData.fileName,
+            file.name,
             BigInt(ts),
-            fileData.signature,
+            signature,
             { gasLimit: 500000n }
           );
 
@@ -164,18 +141,7 @@ export function MultiDocumentSigner() {
           const receipt = await tx.wait(1);
 
           if (receipt) {
-            // Blockchain OK - Guardar en localStorage
-            saveSignedDocument(
-              fileData.fileName,
-              fileData.fileHash,
-              fileData.message,
-              fileData.signature
-            );
-
-            fileData.status = 'saved';
-            fileData.txHash = receipt.hash;
-            savedCount++;
-            success(`✓ ${fileData.fileName} guardado en blockchain + historial`);
+            blockchainSuccess = true;
           }
         } catch (blockchainError: any) {
           // Detectar tipo de error
@@ -189,25 +155,58 @@ export function MultiDocumentSigner() {
             errorMsg = 'Error de conexión con la red';
           }
 
-          fileData.status = 'error';
-          fileData.error = errorMsg;
-          errorToast(`✗ ${fileData.fileName}: ${errorMsg}`);
+          newSignedFiles.set(fileKey, {
+            fileName: file.name,
+            fileHash,
+            message,
+            signature,
+            status: 'error',
+            error: errorMsg,
+          });
+          
+          errorToast(`✗ ${file.name}: ${errorMsg}`);
+          continue; // No guardar en localStorage si blockchain falla
+        }
+
+        // 4. Si blockchain OK → Guardar en localStorage
+        if (blockchainSuccess) {
+          saveSignedDocument(file.name, fileHash, message, signature);
+
+          newSignedFiles.set(fileKey, {
+            fileName: file.name,
+            fileHash,
+            message,
+            signature,
+            status: 'saved',
+          });
+
+          successCount++;
+          success(`✓ ${file.name} firmado y guardado en blockchain + historial`);
         }
       } catch (error) {
+        const fileKey = `${file.name}_${file.size}`;
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-        fileData.status = 'error';
-        fileData.error = errorMsg;
-        errorToast(`✗ Error con ${fileData.fileName}: ${errorMsg}`);
+        
+        newSignedFiles.set(fileKey, {
+          fileName: file.name,
+          fileHash: '',
+          message: '',
+          signature: '',
+          status: 'error',
+          error: errorMsg,
+        });
+        
+        errorToast(`✗ Error con ${file.name}: ${errorMsg}`);
       }
     }
 
     setSignedFiles(newSignedFiles);
-    setIsSavingAll(false);
+    setIsProcessing(false);
 
-    if (savedCount > 0) {
-      setSavedCount(savedCount);
+    if (successCount > 0) {
+      setSavedCount(successCount);
       setShowSaveConfirmation(true);
-      success(`✓ ${savedCount} documento(s) guardado(s) exitosamente`);
+      success(`✓ ${successCount} documento(s) firmado(s) y guardado(s) exitosamente`);
     }
   };
 
@@ -334,13 +333,12 @@ export function MultiDocumentSigner() {
       {signedFiles.size > 0 && (
         <div className="mb-4 p-3 bg-white rounded border border-indigo-100 text-xs space-y-2">
           <p className="text-gray-600">
-            ✓ Firmados: <span className="font-bold text-yellow-600">{getSignedCount()}</span> | 
             📚 Guardados: <span className="font-bold text-green-600">{getSavedCount()}</span> |
             ❌ Errores: <span className="font-bold text-red-600">{Array.from(signedFiles.values()).filter(f => f.status === 'error').length}</span>
           </p>
-          {isSavingAll && (
+          {isProcessing && (
             <p className="text-blue-600 flex items-center gap-1">
-              <Loader size={12} className="animate-spin" /> Guardando en blockchain...
+              <Loader size={12} className="animate-spin" /> Firmando y guardando en blockchain...
             </p>
           )}
         </div>
@@ -351,26 +349,15 @@ export function MultiDocumentSigner() {
         <button
           onClick={handleSignAll}
           disabled={files.length === 0 || isProcessing || !isConnected}
-          className="flex-1 min-w-[150px] px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition text-xs font-semibold"
+          className="flex-1 min-w-[150px] px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition text-xs font-semibold flex items-center justify-center gap-1"
         >
-          {isProcessing ? 'Firmando...' : `Firmar Todo (${files.length})`}
-        </button>
-
-        <button
-          onClick={handleSaveAll}
-          disabled={getSignedCount() === 0 || isSavingAll}
-          className="flex-1 min-w-[150px] px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition text-xs font-semibold flex items-center justify-center gap-1"
-        >
-          {isSavingAll ? (
+          {isProcessing ? (
             <>
               <Loader size={14} className="animate-spin" />
-              Guardando...
+              Procesando...
             </>
           ) : (
-            <>
-              <Download size={14} />
-              Guardar Todos
-            </>
+            `Firmar y Guardar Todo (${files.length})`
           )}
         </button>
 
