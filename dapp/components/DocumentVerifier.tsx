@@ -16,7 +16,7 @@ interface DocumentVerifierProps {
 export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileDropRef = useRef<HTMLDivElement>(null);
-  const { keccak256Hash, fileName, fileSize, calculateHash } = useFileHash();
+  const { keccak256Hash, fileName, fileSize, calculateHash, reset } = useFileHash();
   const { success, error: errorToast, warning, info } = useToast();
   const [dragActive, setDragActive] = useState(false);
 
@@ -130,6 +130,7 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    reset();
     success('✓ Datos de verificación limpiados');
   };
 
@@ -194,34 +195,53 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`p-4 border-2 border-dashed rounded-lg transition ${
+          className={`p-4 border-2 border-dashed rounded-lg transition cursor-pointer ${
             dragActive
-              ? 'border-purple-600 bg-purple-50'
+              ? 'border-purple-600 bg-purple-100'
               : 'border-gray-300 bg-white'
           }`}
         >
-          <label className="text-xs font-semibold text-gray-700 block mb-2">Archivo a Verificar</label>
+          <label className="text-xs font-semibold text-gray-700 block mb-3">Archivo a Verificar</label>
+          
+          {/* Mostrar estado del archivo */}
+          {fileName ? (
+            <div className="space-y-2">
+              <div className="p-3 bg-purple-50 rounded border border-purple-300">
+                <p className="text-xs font-semibold text-purple-700 break-all">{fileName}</p>
+                {fileSize && (
+                  <p className="text-xs text-purple-600 mt-1">
+                    Tamaño: {(fileSize / 1024).toFixed(2)} KB
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">O arrastra otro archivo para reemplazarlo</p>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm font-semibold text-gray-600 mb-2">Ningún archivo seleccionado</p>
+              <p className="text-xs text-gray-500">Arrastra un archivo o haz clic para seleccionar</p>
+            </div>
+          )}
+          
+          {/* Input file oculto */}
           <input
             ref={fileInputRef}
             type="file"
             onChange={handleFileChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs cursor-pointer"
+            className="hidden"
+            onClick={(e) => e.stopPropagation()}
           />
-          <p className="text-xs text-gray-500 mt-2">O arrastra un archivo aquí</p>
-          
-          {/* Mostrar archivo cargado */}
-          {fileName && (
-            <div className="mt-3 p-2 bg-white rounded border border-purple-200">
-              <p className="text-xs text-gray-600 mb-1">Archivo cargado:</p>
-              <p className="text-xs font-semibold text-purple-700">{fileName}</p>
-              {fileSize && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Tamaño: {(fileSize / 1024).toFixed(2)} KB
-                </p>
-              )}
-            </div>
-          )}
         </div>
+        
+        {/* Botón para seleccionar archivo */}
+        {!fileName && (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-semibold"
+          >
+            Selecciona un Archivo
+          </button>
+        )}
 
         {/* Aviso de archivo firmado encontrado */}
         {loadedDocumentData && (
