@@ -146,12 +146,24 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
 
         {/* Aviso de archivo firmado encontrado */}
         {loadedDocumentData && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-            <AlertCircle size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-green-700">Archivo firmado encontrado</p>
-              <p className="text-xs text-green-600 mt-1">Este archivo ya está firmado en tu biblioteca. Los datos se pueden cargar automáticamente.</p>
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertCircle size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-green-700">Archivo firmado encontrado</p>
+                <p className="text-xs text-green-600 mt-1">Este archivo ya está firmado en tu biblioteca. Puedes cargar los datos automáticamente.</p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                setSignature(loadedDocumentData.signature);
+                setSignedMessage(loadedDocumentData.message);
+                success('✓ Datos de firma cargados automáticamente');
+              }}
+              className="w-full px-3 py-2 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition font-semibold"
+            >
+              Cargar Datos de Firma
+            </button>
           </div>
         )}
 
