@@ -40,3 +40,5 @@ yarn-error.log*
 # Testing
 .coverage
 coverage/
+# Documentación local (no subir)
+DOCUMENTACION_COMPLETA.md
