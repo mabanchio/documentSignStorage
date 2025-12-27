@@ -15,8 +15,10 @@ interface DocumentVerifierProps {
 
 export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { keccak256Hash, fileName } = useFileHash();
-  const { success, error: errorToast, warning } = useToast();
+  const fileDropRef = useRef<HTMLDivElement>(null);
+  const { keccak256Hash, fileName, calculateHash } = useFileHash();
+  const { success, error: errorToast, warning, info } = useToast();
+  const [dragActive, setDragActive] = useState(false);
 
   const [signature, setSignature] = useState('');
   const [signedMessage, setSignedMessage] = useState('');
@@ -30,6 +32,60 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
   const [error, setError] = useState<string | null>(null);
   const [exportDocument, setExportDocument] = useState<SignedDocument | null>(null);
   const [loadedDocumentData, setLoadedDocumentData] = useState<SignedDocument | null>(null);
+
+  // Procesar archivo cargado
+  const processFile = async (file: File) => {
+    info(`Procesando archivo: ${file.name}...`);
+    const result = await calculateHash(file);
+    if (result) {
+      success(`✓ Hash calculado para: ${result.fileName}`);
+      
+      // Buscar si este archivo ya fue firmado
+      const signedDoc = getDocumentByFileHash(result.keccak256Hash);
+      if (signedDoc) {
+        setLoadedDocumentData(signedDoc);
+        success(`📄 Documento firmado encontrado en la biblioteca`);
+      } else {
+        setLoadedDocumentData(null);
+      }
+    }
+  };
+
+  // Manejar cambio de archivo del input
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
+  // Manejar drag & drop
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      // Actualizar el input visual
+      if (fileInputRef.current) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInputRef.current.files = dataTransfer.files;
+      }
+      await processFile(file);
+    }
+  };
 
   // Cargar datos cuando se proporciona un documento preglargado
   useEffect(() => {
@@ -131,17 +187,27 @@ export function DocumentVerifier({ preloadedDocument }: DocumentVerifierProps) {
       <h3 className="font-bold text-sm mb-3">Verificar Documento</h3>
 
       <div className="space-y-3">
-        {/* File uploader */}
-        <div>
-          <label className="text-xs font-semibold text-gray-700 block mb-1">Archivo a Verificar</label>
+        {/* File uploader con drag & drop */}
+        <div
+          ref={fileDropRef}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`p-4 border-2 border-dashed rounded-lg transition ${
+            dragActive
+              ? 'border-purple-600 bg-purple-50'
+              : 'border-gray-300 bg-white'
+          }`}
+        >
+          <label className="text-xs font-semibold text-gray-700 block mb-2">Archivo a Verificar</label>
           <input
             ref={fileInputRef}
             type="file"
-            onChange={() => {
-              // El hash se calcula automáticamente en el useEffect
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs"
+            onChange={handleFileChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs cursor-pointer"
           />
+          <p className="text-xs text-gray-500 mt-2">O arrastra un archivo aquí</p>
         </div>
 
         {/* Aviso de archivo firmado encontrado */}
