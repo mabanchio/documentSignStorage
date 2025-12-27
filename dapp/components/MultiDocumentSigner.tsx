@@ -116,25 +116,21 @@ export function MultiDocumentSigner() {
 
         // 1. Calcular hash
         const fileHash = await calculateFileHash(file);
-        const message = `Firmar documento: ${file.name}\nHash: ${fileHash}`;
         const ts = Math.floor(Date.now() / 1000);
-
-        // 2. Firmar localmente
-        const signature = await signMessage(message);
 
         // Preparar parámetros para blockchain
         const hashBytes32 = fileHash.startsWith('0x')
           ? fileHash.padEnd(66, '0')
           : ('0x' + fileHash).padEnd(66, '0');
 
-        // 3. Transacción blockchain PRIMERO
+        // 2. Transacción blockchain (sin firma local previa)
         let blockchainSuccess = false;
         try {
           const tx = await contract.writable.storeSignature(
             hashBytes32,
             file.name,
             BigInt(ts),
-            signature,
+            '', // Firma vacía - la transacción blockchain ya proporciona autenticidad
             { gasLimit: 500000n }
           );
 
@@ -159,8 +155,8 @@ export function MultiDocumentSigner() {
           newSignedFiles.set(fileKey, {
             fileName: file.name,
             fileHash,
-            message,
-            signature,
+            message: `Guardado en blockchain: ${file.name}\nHash: ${fileHash}`,
+            signature: receipt?.hash || '', // Guardar tx hash como referencia
             status: 'error',
             error: errorMsg,
           });
@@ -169,20 +165,21 @@ export function MultiDocumentSigner() {
           continue; // No guardar en localStorage si blockchain falla
         }
 
-        // 4. Si blockchain OK → Guardar en localStorage
+        // 3. Si blockchain OK → Guardar en localStorage
         if (blockchainSuccess) {
-          saveSignedDocument(file.name, fileHash, message, signature);
+          const message = `Guardado en blockchain: ${file.name}\nHash: ${fileHash}`;
+          saveSignedDocument(file.name, fileHash, message, ''); // Firma vacía
 
           newSignedFiles.set(fileKey, {
             fileName: file.name,
             fileHash,
             message,
-            signature,
+            signature: '', // Firma vacía
             status: 'saved',
           });
 
           successCount++;
-          success(`✓ ${file.name} firmado y guardado en blockchain + historial`);
+          success(`✓ ${file.name} guardado en blockchain + historial`);
         }
       } catch (error) {
         const fileKey = `${file.name}_${file.size}`;

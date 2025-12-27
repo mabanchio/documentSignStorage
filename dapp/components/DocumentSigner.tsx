@@ -64,24 +64,12 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
     setError(null);
 
     try {
-      // Crear el mensaje a firmar (sin timestamp para ser determinístico)
-      const message = `Firmar documento: ${fileName}\nHash: ${documentHash}`;
       const ts = Math.floor(Date.now() / 1000);
 
-      info(`Se va a firmar: ${fileName}`);
-
-      const sig = await signMessage(message);
-
-      setSignature(sig);
-      setSignedMessage(message);
-      if (onSigned) {
-        onSigned(sig);
-      }
-      success('✓ Documento firmado correctamente');
+      info(`⏳ Guardando documento en blockchain...`);
       
-      // **PRIMERO: Guardar en blockchain (transacción)**
+      // **DIRECTAMENTE: Guardar en blockchain (sin firma local previa)**
       setIsSavingToBlockchain(true);
-      info('⏳ Guardando en blockchain...');
       
       let blockchainSuccess = false;
       
@@ -94,8 +82,6 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
           console.warn('[DocumentSigner] Contrato writable no disponible');
           warning('⚠ Contrato no disponible, documento NO guardado');
           setIsSavingToBlockchain(false);
-          setSignature(null);
-          setSignedMessage(null);
           return;
         }
 
@@ -107,16 +93,16 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         console.log('[DocumentSigner] Parámetros para storeSignature:', {
           hashBytes32,
           fileName,
-          ts,
-          sigLength: sig.length
+          ts
         });
 
         // Llamar a storeSignature en el contrato con gas limit explícito
+        // Firma vacía - la transacción blockchain ya proporciona autenticidad
         const tx = await contract.writable.storeSignature(
           hashBytes32,
           fileName,
           BigInt(ts),
-          sig,
+          '', // Sin firma local
           {
             gasLimit: 500000n  // Aumentar límite de gas
           }
@@ -130,6 +116,12 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         
         console.log('[DocumentSigner] Transacción confirmada:', receipt);
         setBlockchainTxHash(receipt?.hash || tx.hash);
+        const message = `Guardado en blockchain: ${fileName}\nHash: ${documentHash}`;
+        setSignature(''); // Firma vacía
+        setSignedMessage(message);
+        if (onSigned) {
+          onSigned(''); // Callback con firma vacía
+        }
         success(`✓ ¡Documento guardado en blockchain! Tx: ${tx.hash.slice(0, 10)}...`);
         info(`⛽ Gas gastado: ${receipt?.gasUsed.toString() || 'N/A'}`);
         
@@ -147,9 +139,9 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         
         if (errorStr.includes('insufficient') && errorStr.includes('fund')) {
           friendlyMessage = 'Saldo insuficiente para pagar el gas de la transacción';
-          errorToast('✗ Saldo insuficiente para firmar el documento');
-        } else if (errorStr.includes('user rejected') || errorStr.includes('user denied')) {
-          friendlyMessage = 'Firma de transacción cancelada por el usuario';
+          errorToast('✗ Saldo insuficiente para guardar el documento');
+        } else if (errorStr.includes('user rejected') || errorStr.includes('user denied') || errorStr.includes('action_rejected')) {
+          friendlyMessage = 'Guardado cancelado por el usuario';
           info('ℹ Transacción cancelada por el usuario');
         } else if (errorStr.includes('network') || errorStr.includes('connection')) {
           friendlyMessage = 'Error de conexión con la blockchain';
@@ -161,18 +153,16 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
           errorToast(`✗ Error al guardar en blockchain: ${errorMsg}`);
         }
         
-        // Limpiar firma si falla blockchain
-        setSignature(null);
-        setSignedMessage(null);
         blockchainSuccess = false;
       } finally {
         setIsSavingToBlockchain(false);
       }
 
-      // **SEGUNDO: Solo si blockchain fue exitoso, guardar en localStorage**
+      // **Si blockchain fue exitoso, guardar en localStorage**
       if (blockchainSuccess) {
         try {
-          saveSignedDocument(fileName, documentHash, message, sig);
+          const message = `Guardado en blockchain: ${fileName}\nHash: ${documentHash}`;
+          saveSignedDocument(fileName, documentHash, message, ''); // Firma vacía
           info(`✓ Documento guardado en historial local`);
         } catch (saveError) {
           console.error('[DocumentSigner] Error guardando localmente:', saveError);
@@ -192,14 +182,14 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
         // Limpiar UI si el usuario rechaza
         setSignature(null);
         setSignedMessage(null);
-        info('ℹ Firma cancelada por el usuario');
+        info('ℹ Guardado cancelado por el usuario');
         return;
       }
 
       // Para otros errores, mostrar el mensaje de error
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setError(errorMsg);
-      errorToast('✗ Error firmando documento: ' + errorMsg);
+      errorToast('✗ Error guardando documento: ' + errorMsg);
     } finally {
       setIsLoading(false);
     }
