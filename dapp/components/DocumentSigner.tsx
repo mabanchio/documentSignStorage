@@ -64,9 +64,9 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
     setError(null);
 
     try {
-      // Crear el mensaje a firmar con timestamp
+      // Crear el mensaje a firmar (sin timestamp para ser determinístico)
+      const message = `Firmar documento: ${fileName}\nHash: ${documentHash}`;
       const ts = Math.floor(Date.now() / 1000);
-      const message = `Firmar documento: ${fileName}\nHash: ${documentHash}\nTimestamp: ${ts}`;
 
       info(`Se va a firmar: ${fileName}`);
 

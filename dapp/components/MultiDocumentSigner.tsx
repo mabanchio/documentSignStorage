@@ -115,8 +115,8 @@ export function MultiDocumentSigner() {
 
         // 1. Calcular hash
         const fileHash = await calculateFileHash(file);
+        const message = `Firmar documento: ${file.name}\nHash: ${fileHash}`;
         const ts = Math.floor(Date.now() / 1000);
-        const message = `Firmar documento: ${file.name}\nHash: ${fileHash}\nTimestamp: ${ts}`;
 
         // 2. Firmar localmente
         const signature = await signMessage(message);
