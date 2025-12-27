@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useMetaMask } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
-import { Upload, CheckCircle, Trash2, File, Download } from 'lucide-react';
+import { useContract } from '@/hooks/useContract';
+import { Upload, CheckCircle, Trash2, File, Download, Loader } from 'lucide-react';
 import { saveSignedDocument } from '@/utils/documentStorage';
 
 interface SignedFileData {
@@ -11,15 +12,19 @@ interface SignedFileData {
   fileHash: string;
   message: string;
   signature: string;
-  status: 'pending' | 'signed' | 'saved';
+  status: 'pending' | 'signed' | 'saving' | 'saved' | 'error';
+  error?: string;
+  txHash?: string;
 }
 
 export function MultiDocumentSigner() {
   const { isConnected, signMessage } = useMetaMask();
+  const contract = useContract();
   const { success, error: errorToast, info } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [signedFiles, setSignedFiles] = useState<Map<string, SignedFileData>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingAll, setIsSavingAll] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
@@ -122,27 +127,87 @@ export function MultiDocumentSigner() {
   };
 
   const handleSaveAll = async () => {
-    let count = 0;
+    if (!contract.writable) {
+      errorToast('✗ Contrato no disponible');
+      return;
+    }
 
-    for (const [, fileData] of signedFiles) {
+    setIsSavingAll(true);
+    let savedCount = 0;
+    const newSignedFiles = new Map(signedFiles);
+
+    for (const [fileKey, fileData] of newSignedFiles) {
       if (fileData.status !== 'signed') continue;
 
       try {
-        saveSignedDocument(fileData.fileName, fileData.fileHash, fileData.message, fileData.signature);
-        fileData.status = 'saved';
-        count++;
+        // Cambiar estado a 'saving'
+        fileData.status = 'saving';
+        setSignedFiles(new Map(newSignedFiles));
+
+        // Preparar parámetros para blockchain
+        const hashBytes32 = fileData.fileHash.startsWith('0x')
+          ? fileData.fileHash.padEnd(66, '0')
+          : ('0x' + fileData.fileHash).padEnd(66, '0');
+        const ts = Math.floor(Date.now() / 1000);
+
+        // Transacción blockchain PRIMERO
+        try {
+          const tx = await contract.writable.storeSignature(
+            hashBytes32,
+            fileData.fileName,
+            BigInt(ts),
+            fileData.signature,
+            { gasLimit: 500000n }
+          );
+
+          // Esperar confirmación
+          const receipt = await tx.wait(1);
+
+          if (receipt) {
+            // Blockchain OK - Guardar en localStorage
+            saveSignedDocument(
+              fileData.fileName,
+              fileData.fileHash,
+              fileData.message,
+              fileData.signature
+            );
+
+            fileData.status = 'saved';
+            fileData.txHash = receipt.hash;
+            savedCount++;
+            success(`✓ ${fileData.fileName} guardado en blockchain + historial`);
+          }
+        } catch (blockchainError: any) {
+          // Detectar tipo de error
+          let errorMsg = 'Error en transacción blockchain';
+
+          if (blockchainError.code === 'ACTION_REJECTED') {
+            errorMsg = 'Transacción rechazada por el usuario';
+          } else if (blockchainError.message?.includes('insufficient') && blockchainError.message?.includes('fund')) {
+            errorMsg = 'Saldo insuficiente para pagar el gas';
+          } else if (blockchainError.message?.includes('network') || blockchainError.message?.includes('connection')) {
+            errorMsg = 'Error de conexión con la red';
+          }
+
+          fileData.status = 'error';
+          fileData.error = errorMsg;
+          errorToast(`✗ ${fileData.fileName}: ${errorMsg}`);
+        }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-        errorToast(`✗ Error guardando ${fileData.fileName}: ${errorMsg}`);
+        fileData.status = 'error';
+        fileData.error = errorMsg;
+        errorToast(`✗ Error con ${fileData.fileName}: ${errorMsg}`);
       }
     }
 
-    setSignedFiles(new Map(signedFiles));
+    setSignedFiles(newSignedFiles);
+    setIsSavingAll(false);
 
-    if (count > 0) {
-      setSavedCount(count);
+    if (savedCount > 0) {
+      setSavedCount(savedCount);
       setShowSaveConfirmation(true);
-      success(`✓ ${count} documento(s) guardado(s) en el historial`);
+      success(`✓ ${savedCount} documento(s) guardado(s) exitosamente`);
     }
   };
 
@@ -208,21 +273,48 @@ export function MultiDocumentSigner() {
               <div
                 key={idx}
                 className={`p-2 rounded border flex items-center justify-between text-xs ${
-                  isSigned
+                  fileData?.status === 'saved'
                     ? 'bg-green-50 border-green-200'
+                    : fileData?.status === 'saving'
+                    ? 'bg-blue-50 border-blue-200'
+                    : fileData?.status === 'error'
+                    ? 'bg-red-50 border-red-200'
+                    : fileData?.status === 'signed'
+                    ? 'bg-yellow-50 border-yellow-200'
                     : 'bg-white border-gray-200'
                 }`}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <File size={14} className={isSigned ? 'text-green-600' : 'text-gray-400'} />
+                  <File size={14} className={
+                    fileData?.status === 'saved'
+                      ? 'text-green-600'
+                      : fileData?.status === 'saving'
+                      ? 'text-blue-600 animate-spin'
+                      : fileData?.status === 'error'
+                      ? 'text-red-600'
+                      : fileData?.status === 'signed'
+                      ? 'text-yellow-600'
+                      : 'text-gray-400'
+                  } />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate text-gray-700">{file.name}</p>
                     <p className="text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                    {fileData?.status === 'saving' && (
+                      <p className="text-xs text-blue-600 flex items-center gap-1">
+                        <Loader size={10} className="animate-spin" /> Guardando en blockchain...
+                      </p>
+                    )}
+                    {fileData?.status === 'error' && (
+                      <p className="text-xs text-red-600">{fileData.error}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-2">
-                  {isSigned && (
+                  {fileData?.status === 'saved' && (
                     <CheckCircle size={14} className="text-green-600" />
+                  )}
+                  {fileData?.status === 'signed' && (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Firmado</span>
                   )}
                   <button
                     onClick={() => handleRemoveFile(file.name, file.size)}
@@ -240,11 +332,17 @@ export function MultiDocumentSigner() {
 
       {/* Stats */}
       {signedFiles.size > 0 && (
-        <div className="mb-4 p-2 bg-white rounded border border-indigo-100 text-xs">
+        <div className="mb-4 p-3 bg-white rounded border border-indigo-100 text-xs space-y-2">
           <p className="text-gray-600">
-            ✓ Firmados: <span className="font-bold text-green-600">{getSignedCount()}</span> | 
-            📚 Guardados: <span className="font-bold text-blue-600">{getSavedCount()}</span>
+            ✓ Firmados: <span className="font-bold text-yellow-600">{getSignedCount()}</span> | 
+            📚 Guardados: <span className="font-bold text-green-600">{getSavedCount()}</span> |
+            ❌ Errores: <span className="font-bold text-red-600">{Array.from(signedFiles.values()).filter(f => f.status === 'error').length}</span>
           </p>
+          {isSavingAll && (
+            <p className="text-blue-600 flex items-center gap-1">
+              <Loader size={12} className="animate-spin" /> Guardando en blockchain...
+            </p>
+          )}
         </div>
       )}
 
@@ -260,11 +358,20 @@ export function MultiDocumentSigner() {
 
         <button
           onClick={handleSaveAll}
-          disabled={getSignedCount() === 0}
+          disabled={getSignedCount() === 0 || isSavingAll}
           className="flex-1 min-w-[150px] px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition text-xs font-semibold flex items-center justify-center gap-1"
         >
-          <Download size={14} />
-          Guardar Todos
+          {isSavingAll ? (
+            <>
+              <Loader size={14} className="animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            <>
+              <Download size={14} />
+              Guardar Todos
+            </>
+          )}
         </button>
 
         <button
