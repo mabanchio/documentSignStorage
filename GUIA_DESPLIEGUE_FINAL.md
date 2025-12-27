@@ -132,7 +132,6 @@ Account 0 (Cuenta Principal):
 └── Saldo: 1000 ETH
 
 Accounts 1-9: Disponibles con 1000 ETH cada una
-(Consulta DOCUMENTACION_COMPLETA.md para lista completa)
 ```
 
 ### Comandos Útiles:
