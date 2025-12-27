@@ -6,6 +6,7 @@ import { useMetaMask } from '@/contexts/MetaMaskContext';
 const DOCUMENT_REGISTRY_ABI = [
   'function storeDocumentHash(bytes32 hash, uint256 timestamp, bytes signature) external',
   'function storeSignature(bytes32 hash, string documentName, uint256 timestamp, bytes signature) external',
+  'function storeDocument(bytes32 hash, string documentName, uint256 timestamp) external',
   'function verifyDocument(bytes32 hash, address signer, bytes signature) external view returns (bool)',
   'function getDocumentInfo(bytes32 hash) external view returns ((bytes32, uint256, address, bytes, bool))',
   'function getSignatureRecord(bytes32 hash) external view returns ((string, address, uint256, bytes, bool))',
