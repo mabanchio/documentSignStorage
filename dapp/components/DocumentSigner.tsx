@@ -28,7 +28,9 @@ export function DocumentSigner({ documentHash, fileName, onSigned, onClearFile }
   // Verificar si el documento ya fue firmado cuando se carga un archivo
   useEffect(() => {
     if (documentHash) {
+      console.log('[DocumentSigner] Verificando documento con hash:', documentHash);
       const existingDoc = getDocumentByFileHash(documentHash);
+      console.log('[DocumentSigner] Resultado:', existingDoc ? 'Encontrado' : 'No encontrado');
       setIsAlreadySigned(!!existingDoc);
     } else {
       setIsAlreadySigned(false);

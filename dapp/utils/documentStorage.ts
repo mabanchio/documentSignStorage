@@ -79,7 +79,19 @@ export function getSignedDocumentById(id: string): SignedDocument | null {
  */
 export function getDocumentByFileHash(fileHash: string): SignedDocument | null {
   const documents = getSignedDocuments();
-  return documents.find((doc) => doc.fileHash.toLowerCase() === fileHash.toLowerCase()) || null;
+  const found = documents.find((doc) => doc.fileHash.toLowerCase() === fileHash.toLowerCase()) || null;
+  
+  if (fileHash) {
+    console.log('[DocumentStorage] Buscando documento con hash:', fileHash);
+    console.log('[DocumentStorage] Documentos en storage:', documents.length);
+    if (found) {
+      console.log('[DocumentStorage] Documento encontrado:', found.id, found.fileName);
+    } else {
+      console.log('[DocumentStorage] No se encontró documento con este hash');
+    }
+  }
+  
+  return found;
 }
 
 /**
