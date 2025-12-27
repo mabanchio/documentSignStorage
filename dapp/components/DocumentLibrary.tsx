@@ -118,7 +118,14 @@ export function DocumentLibrary() {
   return (
     <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200 space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-sm">Historial de Documentos ({filteredDocuments.length})</h3>
+        <div>
+          <h3 className="font-bold text-sm">Historial de Documentos</h3>
+          <p className="text-xs text-gray-600 mt-1">
+            Total activos: <span className="font-semibold text-indigo-600">{documents.length}</span> 
+            {searchQuery || filterByMe || startDate || endDate ? 
+              ` • Mostrados: ${filteredDocuments.length}` : ''}
+          </p>
+        </div>
       </div>
 
       {/* Barra de búsqueda */}
